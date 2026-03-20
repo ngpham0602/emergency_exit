@@ -1,0 +1,185 @@
+{
+  "metadata": {
+    "id": "campus-library",
+    "name": "Campus Library",
+    "version": "0.1.0"
+  },
+  "floors": [
+    {
+      "id": "ground",
+      "name": "Ground Floor",
+      "level": 0
+    }
+  ],
+  "nodes": [
+    {
+      "id": "room-a101",
+      "name": "Room A101",
+      "type": "room",
+      "floor": "ground",
+      "coordinates": { "x": 10, "y": 14 }
+    },
+    {
+      "id": "room-a102",
+      "name": "Room A102",
+      "type": "room",
+      "floor": "ground",
+      "coordinates": { "x": 10, "y": 26 }
+    },
+    {
+      "id": "intersection-central",
+      "name": "Central Corridor",
+      "type": "intersection",
+      "floor": "ground",
+      "coordinates": { "x": 28, "y": 20 }
+    },
+    {
+      "id": "intersection-east",
+      "name": "East Hall",
+      "type": "intersection",
+      "floor": "ground",
+      "coordinates": { "x": 44, "y": 20 }
+    },
+    {
+      "id": "stair-b",
+      "name": "Stairwell B",
+      "type": "stairwell",
+      "floor": "ground",
+      "coordinates": { "x": 44, "y": 8 }
+    },
+    {
+      "id": "exit-main",
+      "name": "Main Exit",
+      "type": "exit",
+      "floor": "ground",
+      "coordinates": { "x": 60, "y": 20 }
+    },
+    {
+      "id": "exit-side",
+      "name": "Side Exit",
+      "type": "exit",
+      "floor": "ground",
+      "coordinates": { "x": 44, "y": 4 }
+    },
+    {
+      "id": "refuge-west",
+      "name": "West Refuge Point",
+      "type": "refugePoint",
+      "floor": "ground",
+      "coordinates": { "x": 4, "y": 20 }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-a101-central",
+      "fromNodeID": "room-a101",
+      "toNodeID": "intersection-central",
+      "distance": 18,
+      "edgeType": "doorway",
+      "accessibilityFlags": { "wheelchairAccessible": true }
+    },
+    {
+      "id": "edge-a102-central",
+      "fromNodeID": "room-a102",
+      "toNodeID": "intersection-central",
+      "distance": 18,
+      "edgeType": "doorway",
+      "accessibilityFlags": { "wheelchairAccessible": true }
+    },
+    {
+      "id": "edge-central-east",
+      "fromNodeID": "intersection-central",
+      "toNodeID": "intersection-east",
+      "distance": 16,
+      "edgeType": "corridor",
+      "accessibilityFlags": { "wheelchairAccessible": true }
+    },
+    {
+      "id": "edge-east-main",
+      "fromNodeID": "intersection-east",
+      "toNodeID": "exit-main",
+      "distance": 16,
+      "edgeType": "doorway",
+      "accessibilityFlags": { "wheelchairAccessible": true }
+    },
+    {
+      "id": "edge-east-stair",
+      "fromNodeID": "intersection-east",
+      "toNodeID": "stair-b",
+      "distance": 12,
+      "edgeType": "stair",
+      "accessibilityFlags": { "wheelchairAccessible": false }
+    },
+    {
+      "id": "edge-stair-side",
+      "fromNodeID": "stair-b",
+      "toNodeID": "exit-side",
+      "distance": 8,
+      "edgeType": "stair",
+      "accessibilityFlags": { "wheelchairAccessible": false }
+    },
+    {
+      "id": "edge-central-refuge",
+      "fromNodeID": "intersection-central",
+      "toNodeID": "refuge-west",
+      "distance": 24,
+      "edgeType": "corridor",
+      "accessibilityFlags": { "wheelchairAccessible": true }
+    }
+  ],
+  "exits": [
+    {
+      "id": "main-exit-record",
+      "nodeID": "exit-main",
+      "type": "primary",
+      "status": "available"
+    },
+    {
+      "id": "side-exit-record",
+      "nodeID": "exit-side",
+      "type": "secondary",
+      "status": "available"
+    }
+  ],
+  "refugePoints": [
+    {
+      "id": "refuge-record-west",
+      "nodeID": "refuge-west",
+      "capacityNote": "Holds two wheelchairs comfortably.",
+      "instructions": "Remain at the refuge point and call emergency services."
+    }
+  ],
+  "hazardTemplates": [
+    {
+      "id": "hazard-main-exit-blocked",
+      "title": "Block Main Exit",
+      "targetNodeIDs": ["exit-main"],
+      "targetEdgeIDs": ["edge-east-main"],
+      "severity": "blocked",
+      "status": "simulated",
+      "confidence": "high",
+      "timestamp": "2026-03-20T09:00:00Z"
+    },
+    {
+      "id": "hazard-central-smoke",
+      "title": "Smoke near Central Corridor",
+      "targetNodeIDs": ["intersection-central"],
+      "targetEdgeIDs": ["edge-central-east"],
+      "severity": "highRisk",
+      "status": "simulated",
+      "confidence": "medium",
+      "timestamp": "2026-03-20T09:05:00Z"
+    },
+    {
+      "id": "hazard-side-exit-blocked",
+      "title": "Block Side Exit",
+      "targetNodeIDs": ["exit-side"],
+      "targetEdgeIDs": ["edge-stair-side"],
+      "severity": "blocked",
+      "status": "simulated",
+      "confidence": "high",
+      "timestamp": "2026-03-20T09:10:00Z"
+    }
+  ],
+  "defaultStartNodeID": "room-a101"
+}

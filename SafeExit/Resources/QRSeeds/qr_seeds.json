@@ -1,0 +1,6 @@
+{
+  "anchors": [
+    { "code": "SAFEEXIT-A101", "nodeID": "room-a101" },
+    { "code": "SAFEEXIT-A102", "nodeID": "room-a102" }
+  ]
+}
