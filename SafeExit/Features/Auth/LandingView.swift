@@ -382,7 +382,7 @@ private struct BuildingGraphic: View {
 
                 // Wireframe edges (blue-ish tint like screenshot)
                 let edgeColor = Color(red: 0.3, green: 0.6, blue: 1.0).opacity(0.35)
-                let style = GraphicsContext.Stroke(lineWidth: 0.8)
+                let style = StrokeStyle(lineWidth: 0.8)
                 ctx.stroke(top, with: .color(edgeColor), style: style)
                 ctx.stroke(right, with: .color(edgeColor), style: style)
                 ctx.stroke(left, with: .color(edgeColor), style: style)
