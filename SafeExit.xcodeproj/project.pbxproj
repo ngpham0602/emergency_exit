@@ -1,0 +1,538 @@
+// !$*UTF8*$!
+{
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A00000000000000000000101 /* SafeExitApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000201 /* SafeExitApp.swift */; };
+		A00000000000000000000102 /* AppContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000202 /* AppContainer.swift */; };
+		A00000000000000000000103 /* AppViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000203 /* AppViewModel.swift */; };
+		A00000000000000000000104 /* RootTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000204 /* RootTabView.swift */; };
+		A00000000000000000000105 /* BuildingPackage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000205 /* BuildingPackage.swift */; };
+		A00000000000000000000106 /* HazardModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000206 /* HazardModels.swift */; };
+		A00000000000000000000107 /* RouteModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000207 /* RouteModels.swift */; };
+		A00000000000000000000108 /* RoutingEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000208 /* RoutingEngine.swift */; };
+		A00000000000000000000109 /* BuildingPackageRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000209 /* BuildingPackageRepository.swift */; };
+		A00000000000000000000110 /* HazardStateManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000210 /* HazardStateManager.swift */; };
+		A00000000000000000000111 /* LocationSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000211 /* LocationSelectionView.swift */; };
+		A00000000000000000000112 /* RouteOverviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000212 /* RouteOverviewView.swift */; };
+		A00000000000000000000113 /* EmergencyGuidanceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000213 /* EmergencyGuidanceView.swift */; };
+		A00000000000000000000114 /* AdminHazardPanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000214 /* AdminHazardPanelView.swift */; };
+		A00000000000000000000115 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000215 /* SettingsView.swift */; };
+		A00000000000000000000116 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000216 /* Assets.xcassets */; };
+		A00000000000000000000117 /* demo_building.json in Resources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000217 /* demo_building.json */; };
+		A00000000000000000000118 /* qr_seeds.json in Resources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000218 /* qr_seeds.json */; };
+		A00000000000000000000119 /* RoutingEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000219 /* RoutingEngineTests.swift */; };
+		A00000000000000000000120 /* demo_building.json in Resources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000217 /* demo_building.json */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		A00000000000000000000301 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A00000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A00000000000000000000010;
+			remoteInfo = SafeExit;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		A00000000000000000000401 /* SafeExit.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SafeExit.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A00000000000000000000402 /* SafeExitTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SafeExitTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A00000000000000000000201 /* SafeExitApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafeExitApp.swift; sourceTree = "<group>"; };
+		A00000000000000000000202 /* AppContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppContainer.swift; sourceTree = "<group>"; };
+		A00000000000000000000203 /* AppViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppViewModel.swift; sourceTree = "<group>"; };
+		A00000000000000000000204 /* RootTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootTabView.swift; sourceTree = "<group>"; };
+		A00000000000000000000205 /* BuildingPackage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuildingPackage.swift; sourceTree = "<group>"; };
+		A00000000000000000000206 /* HazardModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HazardModels.swift; sourceTree = "<group>"; };
+		A00000000000000000000207 /* RouteModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouteModels.swift; sourceTree = "<group>"; };
+		A00000000000000000000208 /* RoutingEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoutingEngine.swift; sourceTree = "<group>"; };
+		A00000000000000000000209 /* BuildingPackageRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuildingPackageRepository.swift; sourceTree = "<group>"; };
+		A00000000000000000000210 /* HazardStateManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HazardStateManager.swift; sourceTree = "<group>"; };
+		A00000000000000000000211 /* LocationSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationSelectionView.swift; sourceTree = "<group>"; };
+		A00000000000000000000212 /* RouteOverviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouteOverviewView.swift; sourceTree = "<group>"; };
+		A00000000000000000000213 /* EmergencyGuidanceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmergencyGuidanceView.swift; sourceTree = "<group>"; };
+		A00000000000000000000214 /* AdminHazardPanelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminHazardPanelView.swift; sourceTree = "<group>"; };
+		A00000000000000000000215 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		A00000000000000000000216 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A00000000000000000000217 /* demo_building.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = demo_building.json; sourceTree = "<group>"; };
+		A00000000000000000000218 /* qr_seeds.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = qr_seeds.json; sourceTree = "<group>"; };
+		A00000000000000000000219 /* RoutingEngineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoutingEngineTests.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A00000000000000000000501 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A00000000000000000000502 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		A00000000000000000000601 = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000602 /* SafeExit */,
+				A00000000000000000000603 /* SafeExitTests */,
+				A00000000000000000000604 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A00000000000000000000602 /* SafeExit */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000605 /* App */,
+				A00000000000000000000606 /* Features */,
+				A00000000000000000000607 /* Core */,
+				A00000000000000000000608 /* Resources */,
+				A00000000000000000000216 /* Assets.xcassets */,
+			);
+			path = SafeExit;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000603 /* SafeExitTests */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000219 /* RoutingEngineTests.swift */,
+			);
+			path = SafeExitTests;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000604 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000401 /* SafeExit.app */,
+				A00000000000000000000402 /* SafeExitTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000605 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000201 /* SafeExitApp.swift */,
+				A00000000000000000000202 /* AppContainer.swift */,
+				A00000000000000000000203 /* AppViewModel.swift */,
+				A00000000000000000000204 /* RootTabView.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000606 /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000609 /* LocationSelection */,
+				A00000000000000000000610 /* Routing */,
+				A00000000000000000000611 /* EmergencyMode */,
+				A00000000000000000000612 /* AdminPanel */,
+				A00000000000000000000613 /* Settings */,
+			);
+			path = Features;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000607 /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000614 /* Models */,
+				A00000000000000000000615 /* Graph */,
+				A00000000000000000000616 /* Services */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000608 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000617 /* BuildingPackages */,
+				A00000000000000000000618 /* QRSeeds */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000609 /* LocationSelection */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000211 /* LocationSelectionView.swift */,
+			);
+			path = LocationSelection;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000610 /* Routing */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000212 /* RouteOverviewView.swift */,
+			);
+			path = Routing;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000611 /* EmergencyMode */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000213 /* EmergencyGuidanceView.swift */,
+			);
+			path = EmergencyMode;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000612 /* AdminPanel */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000214 /* AdminHazardPanelView.swift */,
+			);
+			path = AdminPanel;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000613 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000215 /* SettingsView.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000614 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000205 /* BuildingPackage.swift */,
+				A00000000000000000000206 /* HazardModels.swift */,
+				A00000000000000000000207 /* RouteModels.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000615 /* Graph */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000208 /* RoutingEngine.swift */,
+			);
+			path = Graph;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000616 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000209 /* BuildingPackageRepository.swift */,
+				A00000000000000000000210 /* HazardStateManager.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000617 /* BuildingPackages */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000217 /* demo_building.json */,
+			);
+			path = BuildingPackages;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000618 /* QRSeeds */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000218 /* qr_seeds.json */,
+			);
+			path = QRSeeds;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A00000000000000000000010 /* SafeExit */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A00000000000000000000701 /* Build configuration list for PBXNativeTarget "SafeExit" */;
+			buildPhases = (
+				A00000000000000000000801 /* Sources */,
+				A00000000000000000000501 /* Frameworks */,
+				A00000000000000000000802 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = SafeExit;
+			productName = SafeExit;
+			productReference = A00000000000000000000401 /* SafeExit.app */;
+			productType = "com.apple.product-type.application";
+		};
+		A00000000000000000000020 /* SafeExitTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A00000000000000000000702 /* Build configuration list for PBXNativeTarget "SafeExitTests" */;
+			buildPhases = (
+				A00000000000000000000803 /* Sources */,
+				A00000000000000000000502 /* Frameworks */,
+				A00000000000000000000804 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A00000000000000000000901 /* PBXTargetDependency */,
+			);
+			name = SafeExitTests;
+			productName = SafeExitTests;
+			productReference = A00000000000000000000402 /* SafeExitTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A00000000000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1600;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					A00000000000000000000010 = {
+						CreatedOnToolsVersion = 16.0;
+					};
+					A00000000000000000000020 = {
+						CreatedOnToolsVersion = 16.0;
+						TestTargetID = A00000000000000000000010;
+					};
+				};
+			};
+			buildConfigurationList = A00000000000000000000703 /* Build configuration list for PBXProject "SafeExit" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = A00000000000000000000601;
+			productRefGroup = A00000000000000000000604 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				A00000000000000000000010 /* SafeExit */,
+				A00000000000000000000020 /* SafeExitTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A00000000000000000000802 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A00000000000000000000116 /* Assets.xcassets in Resources */,
+				A00000000000000000000117 /* demo_building.json in Resources */,
+				A00000000000000000000118 /* qr_seeds.json in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A00000000000000000000804 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A00000000000000000000120 /* demo_building.json in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A00000000000000000000801 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A00000000000000000000101 /* SafeExitApp.swift in Sources */,
+				A00000000000000000000102 /* AppContainer.swift in Sources */,
+				A00000000000000000000103 /* AppViewModel.swift in Sources */,
+				A00000000000000000000104 /* RootTabView.swift in Sources */,
+				A00000000000000000000105 /* BuildingPackage.swift in Sources */,
+				A00000000000000000000106 /* HazardModels.swift in Sources */,
+				A00000000000000000000107 /* RouteModels.swift in Sources */,
+				A00000000000000000000108 /* RoutingEngine.swift in Sources */,
+				A00000000000000000000109 /* BuildingPackageRepository.swift in Sources */,
+				A00000000000000000000110 /* HazardStateManager.swift in Sources */,
+				A00000000000000000000111 /* LocationSelectionView.swift in Sources */,
+				A00000000000000000000112 /* RouteOverviewView.swift in Sources */,
+				A00000000000000000000113 /* EmergencyGuidanceView.swift in Sources */,
+				A00000000000000000000114 /* AdminHazardPanelView.swift in Sources */,
+				A00000000000000000000115 /* SettingsView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A00000000000000000000803 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A00000000000000000000119 /* RoutingEngineTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		A00000000000000000000901 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A00000000000000000000010 /* SafeExit */;
+			targetProxy = A00000000000000000000301 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		A00000000000000000001001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"SafeExit/Preview Content\"";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = SafeExit;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.codex.SafeExit;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		A00000000000000000001002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"SafeExit/Preview Content\"";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = SafeExit;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.codex.SafeExit;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		A00000000000000000001003 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.codex.SafeExitTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SafeExit.app/SafeExit";
+			};
+			name = Debug;
+		};
+		A00000000000000000001004 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.codex.SafeExitTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SafeExit.app/SafeExit";
+			};
+			name = Release;
+		};
+		A00000000000000000001005 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+			};
+			name = Debug;
+		};
+		A00000000000000000001006 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		A00000000000000000000701 /* Build configuration list for PBXNativeTarget "SafeExit" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A00000000000000000001001 /* Debug */,
+				A00000000000000000001002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A00000000000000000000702 /* Build configuration list for PBXNativeTarget "SafeExitTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A00000000000000000001003 /* Debug */,
+				A00000000000000000001004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A00000000000000000000703 /* Build configuration list for PBXProject "SafeExit" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A00000000000000000001005 /* Debug */,
+				A00000000000000000001006 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = A00000000000000000000001 /* Project object */;
+}
