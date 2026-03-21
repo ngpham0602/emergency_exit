@@ -1,0 +1,12 @@
+{
+  "name": "safeexit-functions",
+  "description": "Firebase Cloud Functions for SafeExit emergency alerts",
+  "main": "index.js",
+  "dependencies": {
+    "firebase-admin": "^12.0.0",
+    "firebase-functions": "^5.0.0"
+  },
+  "engines": {
+    "node": "18"
+  }
+}
