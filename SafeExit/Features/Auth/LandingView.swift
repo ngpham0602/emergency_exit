@@ -32,40 +32,46 @@ struct WelcomeOnboardingView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Spacer()
+            Spacer().frame(height: 52)
 
             // Logo mark
             ZStack {
-                RoundedRectangle(cornerRadius: 22)
+                RoundedRectangle(cornerRadius: 20)
                     .fill(Color.white)
-                    .frame(width: 92, height: 92)
+                    .frame(width: 76, height: 76)
                 Image(systemName: "shield.fill")
-                    .font(.system(size: 50))
+                    .font(.system(size: 40))
                     .foregroundStyle(AppTheme.bg)
             }
 
-            Spacer().frame(height: 16)
+            Spacer().frame(height: 12)
 
             Text("SAFEEXIT")
                 .font(.system(size: 13, weight: .bold, design: .monospaced))
                 .tracking(6)
                 .foregroundStyle(AppTheme.green)
 
-            Spacer().frame(height: 36)
+            // Green underline accent
+            Rectangle()
+                .fill(AppTheme.green)
+                .frame(width: 40, height: 2)
+                .padding(.top, 6)
 
-            // Isometric building graphic
-            BuildingGraphic()
-                .frame(width: 220, height: 150)
+            Spacer().frame(height: 28)
 
-            Spacer().frame(height: 32)
+            // Radar + building graphic
+            RadarBuildingGraphic()
+                .frame(width: 300, height: 260)
+
+            Spacer().frame(height: 24)
 
             // Headline
             VStack(alignment: .leading, spacing: 2) {
                 Text("Your Safety,")
-                    .font(.system(size: 34, weight: .bold))
+                    .font(.system(size: 32, weight: .bold))
                     .foregroundStyle(AppTheme.textPri)
                 Text("Optimized.")
-                    .font(.system(size: 34, weight: .bold))
+                    .font(.system(size: 32, weight: .bold))
                     .foregroundStyle(AppTheme.green)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -73,21 +79,22 @@ struct WelcomeOnboardingView: View {
 
             Spacer().frame(height: 10)
 
-            Text("Instant, recalculated evacuation paths\nthat adapt to real-time building hazards.")
+            Text("Instant, AI-recalculated evacuation paths\nthat adapt to real-time building hazards.")
                 .font(.system(size: 14))
                 .foregroundStyle(AppTheme.textSec)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .lineSpacing(4)
                 .padding(.horizontal, 28)
 
-            Spacer().frame(height: 24)
+            Spacer().frame(height: 20)
 
             // Feature chips
             HStack(spacing: 8) {
-                LandingChip(icon: "map.fill",         label: "LIVE MAP")
-                LandingChip(icon: "bolt.fill",        label: "FAST EXIT")
-                LandingChip(icon: "dot.radiowaves.up.forward", label: "SOS SYNC")
+                LandingChip(icon: "mappin.circle.fill", label: "LIVE MAP")
+                LandingChip(icon: "bolt.fill",          label: "FAST EXIT")
+                LandingChip(icon: "shield.fill",        label: "SOS SYNC")
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 28)
 
             Spacer()
@@ -141,7 +148,7 @@ struct SignInView: View {
     var body: some View {
         VStack(spacing: 0) {
             Spacer()
-            // Hien
+
             // Logo
             ZStack {
                 RoundedRectangle(cornerRadius: 18)
@@ -311,25 +318,30 @@ private struct LandingChip: View {
     }
 }
 
-// MARK: - Isometric building illustration
+// MARK: - Radar + Building graphic
 
-private struct BuildingGraphic: View {
+private struct RadarBuildingGraphic: View {
     var body: some View {
         ZStack {
-            // Outer glow rings
-            Circle()
-                .stroke(AppTheme.green.opacity(0.06), lineWidth: 50)
-                .frame(width: 120)
-            Circle()
-                .stroke(AppTheme.green.opacity(0.04), lineWidth: 30)
-                .frame(width: 170)
+            // Concentric radar rings
+            ForEach([1.0, 0.78, 0.58, 0.38], id: \.self) { scale in
+                Circle()
+                    .stroke(AppTheme.green.opacity(scale * 0.13), lineWidth: 1)
+                    .frame(width: 260, height: 260)
+                    .scaleEffect(scale)
+            }
 
+            // Subtle green glow behind building
+            Circle()
+                .fill(AppTheme.green.opacity(0.04))
+                .frame(width: 160, height: 160)
+
+            // Isometric building canvas
             Canvas { ctx, size in
                 let w = size.width, h = size.height
                 let cx = w * 0.5, cy = h * 0.52
 
-                // -- Isometric building --
-                let isoW: CGFloat = 80, isoH: CGFloat = 55, depth: CGFloat = 30
+                let isoW: CGFloat = 88, isoH: CGFloat = 60, depth: CGFloat = 32
 
                 // Top face
                 let top = Path { p in
@@ -361,48 +373,85 @@ private struct BuildingGraphic: View {
                 }
                 ctx.fill(left, with: .color(Color(white: 0.14)))
 
+                // Interior room dividers on top face (floor plan look)
+                let roomLineColor = Color(red: 0.3, green: 0.6, blue: 1.0).opacity(0.25)
+                let roomStyle = StrokeStyle(lineWidth: 0.6)
+                // Horizontal divider across top face
+                let hDiv = Path { p in
+                    p.move(to:    CGPoint(x: cx - isoW * 0.2, y: cy - isoH * 0.5 + depth * 0.4))
+                    p.addLine(to: CGPoint(x: cx + isoW * 0.8, y: cy - isoH * 0.5 + depth * 0.4 - 8))
+                }
+                ctx.stroke(hDiv, with: .color(roomLineColor), style: roomStyle)
+                // Vertical divider
+                let vDiv = Path { p in
+                    p.move(to:    CGPoint(x: cx + isoW * 0.1, y: cy - isoH * 0.5))
+                    p.addLine(to: CGPoint(x: cx + isoW * 0.1, y: cy - isoH * 0.5 + depth * 0.8))
+                }
+                ctx.stroke(vDiv, with: .color(roomLineColor), style: roomStyle)
+
                 // Windows on right face
                 let greenColor = Color(red: 0.22, green: 0.96, blue: 0.29)
                 for row in 0..<3 {
                     for col in 0..<2 {
-                        let wx = cx + 14 + CGFloat(col) * 26
-                        let wy = cy - 10 + CGFloat(row) * 20
-                        let winRect = CGRect(x: wx, y: wy, width: 10, height: 13)
-                        ctx.fill(Path(winRect), with: .color(greenColor.opacity(col == 0 && row == 1 ? 0.9 : 0.3)))
+                        let wx = cx + 14 + CGFloat(col) * 28
+                        let wy = cy - 8 + CGFloat(row) * 20
+                        let winRect = CGRect(x: wx, y: wy, width: 11, height: 13)
+                        ctx.fill(Path(winRect),
+                                 with: .color(greenColor.opacity(col == 0 && row == 1 ? 0.85 : 0.25)))
                     }
                 }
 
                 // Windows on left face
                 for row in 0..<3 {
                     let wx = cx - 36
-                    let wy = cy - 10 + CGFloat(row) * 20
+                    let wy = cy - 8 + CGFloat(row) * 20
                     ctx.fill(Path(CGRect(x: wx, y: wy, width: 10, height: 13)),
                              with: .color(Color(white: 0.25)))
                 }
 
-                // Wireframe edges (blue-ish tint like screenshot)
-                let edgeColor = Color(red: 0.3, green: 0.6, blue: 1.0).opacity(0.35)
-                let style = StrokeStyle(lineWidth: 0.8)
-                ctx.stroke(top, with: .color(edgeColor), style: style)
-                ctx.stroke(right, with: .color(edgeColor), style: style)
-                ctx.stroke(left, with: .color(edgeColor), style: style)
+                // Blue wireframe edges
+                let edgeColor = Color(red: 0.3, green: 0.6, blue: 1.0).opacity(0.40)
+                let edgeStyle = StrokeStyle(lineWidth: 0.9)
+                ctx.stroke(top,   with: .color(edgeColor), style: edgeStyle)
+                ctx.stroke(right, with: .color(edgeColor), style: edgeStyle)
+                ctx.stroke(left,  with: .color(edgeColor), style: edgeStyle)
             }
+            .frame(width: 220, height: 160)
 
-            // Floating icons
-            Image(systemName: "mappin.circle.fill")
-                .font(.system(size: 20))
-                .foregroundStyle(AppTheme.green)
-                .offset(x: 72, y: -40)
+            // Floating icon cards
+            // Map pin — top right, green card
+            FloatingIconCard(icon: "mappin.and.ellipse", isGreen: true)
+                .offset(x: 104, y: -88)
 
-            Image(systemName: "shield.fill")
-                .font(.system(size: 16))
-                .foregroundStyle(AppTheme.textDim)
-                .offset(x: -72, y: 22)
+            // Bolt — right middle, dark card
+            FloatingIconCard(icon: "bolt.fill", isGreen: false)
+                .offset(x: 114, y: 14)
 
-            Image(systemName: "bolt.fill")
-                .font(.system(size: 16))
-                .foregroundStyle(AppTheme.textDim)
-                .offset(x: 74, y: 18)
+            // Shield — bottom left, dark card
+            FloatingIconCard(icon: "shield.fill", isGreen: false)
+                .offset(x: -104, y: 70)
+        }
+    }
+}
+
+// MARK: - Floating icon card
+
+private struct FloatingIconCard: View {
+    let icon: String
+    let isGreen: Bool
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 12)
+                .fill(isGreen ? AppTheme.green : AppTheme.cardBg2)
+                .frame(width: 44, height: 44)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(isGreen ? Color.clear : AppTheme.border, lineWidth: 1)
+                )
+            Image(systemName: icon)
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundStyle(isGreen ? AppTheme.bg : AppTheme.textSec)
         }
     }
 }
