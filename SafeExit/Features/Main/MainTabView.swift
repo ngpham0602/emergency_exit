@@ -6,6 +6,9 @@ struct MainTabView: View {
     @StateObject private var floorPlanVM = FloorPlanLibraryViewModel()
     @State private var selectedTab = 0
     @State private var showEmergency = false
+    @State private var showSendEmergency = false
+    @State private var confirmStopAlert = false
+    @State private var confirmStopHazard = false
 
     private var isSecurity: Bool { authVM.userRole == .security }
 
@@ -58,13 +61,75 @@ struct MainTabView: View {
 
             // Custom tab bar
             VStack(spacing: 0) {
-                // Emergency banner (security only)
-                if isSecurity && hasBlockedHazard {
-                    Button { showEmergency = true } label: {
+                // Security banner — active alert with STOP button
+                if isSecurity, let alert = viewModel.activeEmergencyAlert {
+                    HStack(spacing: 10) {
+                        Image(systemName: alert.type.icon)
+                            .font(.system(size: 13))
+                        Text("\(alert.type.notificationTitle) ACTIVE")
+                            .font(.system(size: 12, weight: .black))
+                            .tracking(0.5)
+                        Spacer()
+                        Button { confirmStopAlert = true } label: {
+                            HStack(spacing: 5) {
+                                Image(systemName: "stop.fill")
+                                    .font(.system(size: 10))
+                                Text("STOP ALERT")
+                                    .font(.system(size: 11, weight: .black))
+                            }
+                            .foregroundStyle(AppTheme.red)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(.white)
+                            .clipShape(Capsule())
+                        }
+                    }
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 11)
+                    .background(AppTheme.red)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+
+                // Hazard banner — visible to BOTH security and employee
+                if viewModel.hasReportedHazards && viewModel.activeEmergencyAlert == nil {
+                    HStack(spacing: 10) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.system(size: 13))
+                        Text("HAZARD REPORTED")
+                            .font(.system(size: 12, weight: .black))
+                            .tracking(0.5)
+                        Spacer()
+                        if isSecurity {
+                            Button { confirmStopHazard = true } label: {
+                                HStack(spacing: 5) {
+                                    Image(systemName: "stop.fill")
+                                        .font(.system(size: 10))
+                                    Text("CLEAR")
+                                        .font(.system(size: 11, weight: .black))
+                                }
+                                .foregroundStyle(AppTheme.amber)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(.white)
+                                .clipShape(Capsule())
+                            }
+                        }
+                    }
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 11)
+                    .background(AppTheme.amber)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+
+                // Employee banner — alert received
+                if !isSecurity, let alert = viewModel.activeEmergencyAlert {
+                    Button { viewModel.showEmergencyAlert = true } label: {
                         HStack(spacing: 10) {
-                            Image(systemName: "exclamationmark.triangle.fill")
+                            Image(systemName: alert.type.icon)
                                 .font(.system(size: 13))
-                            Text("EMERGENCY ACTIVE — TAP TO VIEW")
+                            Text("\(alert.type.notificationTitle) — TAP FOR DETAILS")
                                 .font(.system(size: 12, weight: .black))
                                 .tracking(0.5)
                             Spacer()
@@ -97,12 +162,91 @@ struct MainTabView: View {
         }
         .ignoresSafeArea(edges: .bottom)
         .animation(.easeInOut(duration: 0.25), value: hasBlockedHazard)
+        .animation(.easeInOut(duration: 0.25), value: viewModel.activeEmergencyAlert?.id)
+        .animation(.easeInOut(duration: 0.25), value: viewModel.hasReportedHazards)
         .preferredColorScheme(.dark)
         .fullScreenCover(isPresented: $showEmergency) {
             EmergencyActiveView().environmentObject(viewModel)
         }
-        .onAppear { viewModel.recomputeRoute() }
+        .fullScreenCover(isPresented: $viewModel.showEmergencyAlert) {
+            if let alert = viewModel.activeEmergencyAlert {
+                EmployeeEmergencyAlertView(alert: alert) {
+                    let routeTabIndex = isSecurity ? 3 : 1
+                    selectedTab = routeTabIndex
+                    viewModel.recomputeRoute()
+                }
+                .environmentObject(viewModel)
+            }
+        }
+        // Auto-dismiss the fullScreenCover when alert is cleared (security stopped it)
+        .onChange(of: viewModel.activeEmergencyAlert?.id) { newID in
+            if newID == nil {
+                viewModel.showEmergencyAlert = false
+            }
+        }
+        .sheet(isPresented: $showSendEmergency) {
+            SendEmergencyView()
+                .environmentObject(viewModel)
+                .environmentObject(authVM)
+                .presentationBackground(AppTheme.bg)
+        }
+        .onAppear {
+            viewModel.recomputeRoute()
+            viewModel.startListeningForEmergencyAlerts()
+            viewModel.startListeningForReportedHazards()
+        }
+        .confirmationDialog(
+            "Stop Emergency Alert",
+            isPresented: $confirmStopAlert,
+            titleVisibility: .visible
+        ) {
+            Button("Stop Alert", role: .destructive) {
+                viewModel.stopEmergencyAlert()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This will deactivate the emergency alert for all employees and send an ALL CLEAR notification.")
+        }
+        .confirmationDialog(
+            "Clear All Hazards",
+            isPresented: $confirmStopHazard,
+            titleVisibility: .visible
+        ) {
+            Button("Clear All Hazards", role: .destructive) {
+                viewModel.stopAllHazards()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This will clear all reported hazards and return the app to normal for all users.")
+        }
         .onChange(of: authVM.userRole) { _ in selectedTab = 0 }
+        .onChange(of: viewModel.shouldNavigateToMap) { navigate in
+            if navigate {
+                let routeTabIndex = isSecurity ? 3 : 1
+                selectedTab = routeTabIndex
+                viewModel.shouldNavigateToMap = false
+                viewModel.recomputeRoute()
+            }
+        }
+    }
+
+    // MARK: - Send emergency (security only)
+
+    var sendEmergencyButton: some View {
+        Button { showSendEmergency = true } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "megaphone.fill")
+                    .font(.system(size: 14))
+                Text("SEND ALERT")
+                    .font(.system(size: 12, weight: .black))
+                    .tracking(0.5)
+            }
+            .foregroundStyle(.white)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(AppTheme.red)
+            .clipShape(Capsule())
+        }
     }
 
     // MARK: - Role-specific content

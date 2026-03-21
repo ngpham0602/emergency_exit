@@ -7,10 +7,16 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1B2948128303306AC0EDB1FD /* EmployeeEmergencyAlertView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43F44F7C91C941F463B0F468 /* EmployeeEmergencyAlertView.swift */; };
 		2E7187992F6EACA10000D817 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 2E7187982F6EACA10000D817 /* FirebaseAuth */; };
 		2E71879B2F6EACA10000D817 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 2E71879A2F6EACA10000D817 /* FirebaseFirestore */; };
 		2E71879D2F6EACA10000D817 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = 2E71879C2F6EACA10000D817 /* FirebaseStorage */; };
 		2E71879F2F6EAD670000D817 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 2E71879E2F6EAD660000D817 /* GoogleService-Info.plist */; };
+		2E7187A12F6EACA10000D817 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 2E7187A02F6EACA10000D817 /* FirebaseMessaging */; };
+		4F7045449A36ADA4B964322D /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE994DA08B5E20E1526F1CE8 /* AppDelegate.swift */; };
+		604D4E0AB936E2BBAF86107C /* EmergencyNotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79214F0691A7C550AF45C5FE /* EmergencyNotificationManager.swift */; };
+		923D44A2A28D83208BFCD99E /* EmergencyAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7464E8B987D68EB8EF59440 /* EmergencyAlert.swift */; };
+		931F42C19EB00C599465E019 /* SendEmergencyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4640462897316FDF36B5E48A /* SendEmergencyView.swift */; };
 		A00000000000000000000101 /* SafeExitApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000201 /* SafeExitApp.swift */; };
 		A00000000000000000000102 /* AppContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000202 /* AppContainer.swift */; };
 		A00000000000000000000103 /* AppViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000203 /* AppViewModel.swift */; };
@@ -64,6 +70,9 @@
 
 /* Begin PBXFileReference section */
 		2E71879E2F6EAD660000D817 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+		43F44F7C91C941F463B0F468 /* EmployeeEmergencyAlertView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = EmployeeEmergencyAlertView.swift; path = SafeExit/Features/EmergencyMode/EmployeeEmergencyAlertView.swift; sourceTree = SOURCE_ROOT; };
+		4640462897316FDF36B5E48A /* SendEmergencyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SendEmergencyView.swift; path = SafeExit/Features/EmergencyMode/SendEmergencyView.swift; sourceTree = SOURCE_ROOT; };
+		79214F0691A7C550AF45C5FE /* EmergencyNotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = EmergencyNotificationManager.swift; path = SafeExit/Core/Services/EmergencyNotificationManager.swift; sourceTree = SOURCE_ROOT; };
 		A00000000000000000000201 /* SafeExitApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafeExitApp.swift; sourceTree = "<group>"; };
 		A00000000000000000000202 /* AppContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppContainer.swift; sourceTree = "<group>"; };
 		A00000000000000000000203 /* AppViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppViewModel.swift; sourceTree = "<group>"; };
@@ -104,6 +113,8 @@
 		A00000000000000000000232 /* MapEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapEditorView.swift; sourceTree = "<group>"; };
 		A00000000000000000000401 /* SafeExit.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SafeExit.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A00000000000000000000402 /* SafeExitTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SafeExitTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		CE994DA08B5E20E1526F1CE8 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = SafeExit/App/AppDelegate.swift; sourceTree = SOURCE_ROOT; };
+		F7464E8B987D68EB8EF59440 /* EmergencyAlert.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = EmergencyAlert.swift; path = SafeExit/Core/Models/EmergencyAlert.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -114,6 +125,7 @@
 				2E7187992F6EACA10000D817 /* FirebaseAuth in Frameworks */,
 				2E71879B2F6EACA10000D817 /* FirebaseFirestore in Frameworks */,
 				2E71879D2F6EACA10000D817 /* FirebaseStorage in Frameworks */,
+				2E7187A12F6EACA10000D817 /* FirebaseMessaging in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -133,6 +145,11 @@
 				A00000000000000000000602 /* SafeExit */,
 				A00000000000000000000603 /* SafeExitTests */,
 				A00000000000000000000604 /* Products */,
+				F7464E8B987D68EB8EF59440 /* EmergencyAlert.swift */,
+				79214F0691A7C550AF45C5FE /* EmergencyNotificationManager.swift */,
+				4640462897316FDF36B5E48A /* SendEmergencyView.swift */,
+				43F44F7C91C941F463B0F468 /* EmployeeEmergencyAlertView.swift */,
+				CE994DA08B5E20E1526F1CE8 /* AppDelegate.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -514,6 +531,11 @@
 				A00000000000000000000131 /* DesignConceptsPreview.swift in Sources */,
 				A00000000000000000000132 /* FirebaseTestView.swift in Sources */,
 				A00000000000000000000133 /* MapEditorView.swift in Sources */,
+				923D44A2A28D83208BFCD99E /* EmergencyAlert.swift in Sources */,
+				604D4E0AB936E2BBAF86107C /* EmergencyNotificationManager.swift in Sources */,
+				931F42C19EB00C599465E019 /* SendEmergencyView.swift in Sources */,
+				1B2948128303306AC0EDB1FD /* EmployeeEmergencyAlertView.swift in Sources */,
+				4F7045449A36ADA4B964322D /* AppDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -779,6 +801,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 2E7187972F6EACA10000D817 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseStorage;
+		};
+		2E7187A02F6EACA10000D817 /* FirebaseMessaging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2E7187972F6EACA10000D817 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseMessaging;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

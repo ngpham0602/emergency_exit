@@ -257,4 +257,77 @@ class FirestoreService {
                 onChange(hazards)
             }
     }
+
+
+    // —— EMERGENCY ALERTS ———————————————————————————————————————————————
+
+    /// Security officer broadcasts an emergency alert to all employees.
+    func sendEmergencyAlert(_ alert: EmergencyAlert) async throws {
+        try db.collection("emergencyAlerts").document(alert.id).setData(from: alert)
+    }
+
+    /// Delete a single emergency alert document.
+    func deactivateEmergencyAlert(id: String) async throws {
+        try await db.collection("emergencyAlerts").document(id).delete()
+    }
+
+    /// Delete ALL active emergency alert documents.
+    /// This ensures no stale alerts from previous tests remain.
+    func deleteAllActiveEmergencyAlerts() async throws {
+        let snapshot = try await db.collection("emergencyAlerts").getDocuments()
+        let batch = db.batch()
+        for doc in snapshot.documents {
+            batch.deleteDocument(doc.reference)
+        }
+        try await batch.commit()
+    }
+
+
+    // —— REPORTED HAZARDS (synced across devices) ——————————————————————————
+
+    /// Save a reported hazard so all devices can see it.
+    func reportActiveHazard(hazardID: String, title: String, type: String) async throws {
+        try await db.collection("activeHazards").document(hazardID).setData([
+            "id": hazardID,
+            "title": title,
+            "type": type,
+            "timestamp": FieldValue.serverTimestamp(),
+            "isActive": true
+        ])
+    }
+
+    /// Delete all active reported hazards (security stops them).
+    func deleteAllReportedHazards() async throws {
+        let snapshot = try await db.collection("activeHazards").getDocuments()
+        let batch = db.batch()
+        for doc in snapshot.documents {
+            batch.deleteDocument(doc.reference)
+        }
+        try await batch.commit()
+    }
+
+    /// Real-time listener for reported hazards across devices.
+    func listenToReportedHazards(
+        onChange: @escaping ([[String: Any]]) -> Void
+    ) -> ListenerRegistration {
+        return db.collection("activeHazards")
+            .whereField("isActive", isEqualTo: true)
+            .addSnapshotListener { snapshot, _ in
+                let hazards = snapshot?.documents.map { $0.data() } ?? []
+                onChange(hazards)
+            }
+    }
+
+    /// Real-time listener for active emergency alerts.
+    func listenToEmergencyAlerts(
+        onChange: @escaping ([EmergencyAlert]) -> Void
+    ) -> ListenerRegistration {
+        return db.collection("emergencyAlerts")
+            .whereField("isActive", isEqualTo: true)
+            .addSnapshotListener { snapshot, _ in
+                let alerts = snapshot?.documents
+                    .compactMap { try? $0.data(as: EmergencyAlert.self) } ?? []
+                onChange(alerts)
+            }
+    }
 }

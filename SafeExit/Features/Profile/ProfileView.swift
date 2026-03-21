@@ -8,6 +8,7 @@ struct ProfileView: View {
     @State private var biometricLock      = false
     @State private var showSignOutConfirm = false
     @State private var showFirebaseTest   = false
+    @State private var showSendEmergency  = false
 
     private let safetyContacts: [SafetyContact] = [
         SafetyContact(name: "Emergency Response", role: "Security",       icon: "shield.fill"),
@@ -95,32 +96,34 @@ struct ProfileView: View {
 
                     VStack(spacing: 16) {
 
-                        // Emergency protocols
-                        VStack(alignment: .leading, spacing: 12) {
-                            SectionHeader(icon: "exclamationmark.triangle.fill",
-                                          label: "EMERGENCY PROTOCOLS",
-                                          iconColor: AppTheme.red)
+                        // Emergency protocols (security only)
+                        if auth.userRole == .security {
+                            VStack(alignment: .leading, spacing: 12) {
+                                SectionHeader(icon: "exclamationmark.triangle.fill",
+                                              label: "EMERGENCY PROTOCOLS",
+                                              iconColor: AppTheme.red)
 
-                            Text("Instantly broadcast your SOS code to all safety contacts and building security.")
-                                .font(.system(size: 13))
-                                .foregroundStyle(AppTheme.textSec)
-                                .padding(.horizontal, 2)
+                                Text("Instantly broadcast your SOS code to all safety contacts and building security.")
+                                    .font(.system(size: 13))
+                                    .foregroundStyle(AppTheme.textSec)
+                                    .padding(.horizontal, 2)
 
-                            Button {} label: {
-                                HStack(spacing: 10) {
-                                    Image(systemName: "shield.fill")
-                                        .font(.system(size: 16))
-                                    Text("Send Emergency Code")
-                                        .font(.system(size: 15, weight: .bold))
+                                Button { showSendEmergency = true } label: {
+                                    HStack(spacing: 10) {
+                                        Image(systemName: "megaphone.fill")
+                                            .font(.system(size: 16))
+                                        Text("Send Emergency Code")
+                                            .font(.system(size: 15, weight: .bold))
+                                    }
+                                    .foregroundStyle(.white)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 16)
+                                    .background(AppTheme.red)
+                                    .clipShape(RoundedRectangle(cornerRadius: 12))
                                 }
-                                .foregroundStyle(.white)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 16)
-                                .background(AppTheme.red)
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
                             }
+                            .darkCard()
                         }
-                        .darkCard()
 
                         // Safety contacts
                         VStack(alignment: .leading, spacing: 12) {
@@ -283,6 +286,12 @@ struct ProfileView: View {
             }
         }
         .sheet(isPresented: $showFirebaseTest) { FirebaseTestView() }
+        .sheet(isPresented: $showSendEmergency) {
+            SendEmergencyView()
+                .environmentObject(viewModel)
+                .environmentObject(auth)
+                .presentationBackground(AppTheme.bg)
+        }
         .confirmationDialog("Sign Out", isPresented: $showSignOutConfirm, titleVisibility: .visible) {
             Button("Sign Out", role: .destructive) { auth.signOut() }
             Button("Cancel", role: .cancel) {}
