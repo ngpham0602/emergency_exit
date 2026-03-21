@@ -1,14 +1,10 @@
 import SwiftUI
-import Firebase
+import FireBase
 
 @main
 struct SafeExitApp: App {
     @StateObject private var appViewModel  = AppViewModel(container: AppContainer.makeDefault())
     @StateObject private var authViewModel = AuthViewModel()
-
-    init() {
-        FirebaseApp.configure()
-    }
 
     var body: some Scene {
         WindowGroup {
