@@ -1,13 +1,27 @@
 import Foundation
+import UIKit
 import FirebaseFirestore
+import FirebaseStorage
 
 // Singleton — one shared instance used everywhere in SafeExit
 // Usage anywhere in the app: FirestoreService.shared.fetchBuildings()
 
+// Firestore document for a floor plan library entry.
+// imageURL points to the full-resolution JPEG in Firebase Storage (floorPlans/{id}.jpg).
+struct FloorPlanRecord: Codable {
+    var id:           String
+    var name:         String
+    var floorLabel:   String
+    var status:       String   // raw value of FloorPlanStatus
+    var lastModified: Date
+    var imageURL:     String?  // Firebase Storage download URL
+}
+
 class FirestoreService {
 
     static let shared = FirestoreService()
-    private let db = Firestore.firestore()
+    private let db      = Firestore.firestore()
+    private let storage = Storage.storage()
     private init() {}
 
 
@@ -159,6 +173,61 @@ class FirestoreService {
         edgeSnap.documents.forEach { batch.deleteDocument($0.reference) }
         try await batch.commit()
     }
+
+    // —— FLOOR PLAN LIBRARY ———————————————————————————————————————————————
+    // Metadata in Firestore:  floorPlans/{id}
+    // Full image in Storage:  floorPlans/{id}.jpg
+
+    func fetchFloorPlanRecords() async throws -> [FloorPlanRecord] {
+        let snap = try await db.collection("floorPlans").getDocuments()
+        return snap.documents.compactMap { try? $0.data(as: FloorPlanRecord.self) }
+    }
+
+    func saveFloorPlanRecord(_ record: FloorPlanRecord) async throws {
+        try db.collection("floorPlans").document(record.id).setData(from: record)
+    }
+
+    func deleteFloorPlanRecord(id: String) async throws {
+        try await db.collection("floorPlans").document(id).delete()
+    }
+
+    func updateFloorPlanFields(id: String, fields: [String: Any]) async throws {
+        try await db.collection("floorPlans").document(id).updateData(fields)
+    }
+
+    /// Upload a floor plan image to Firebase Storage and return its download URL string.
+    func uploadFloorPlanImage(_ image: UIImage, id: String) async throws -> String {
+        guard let data = image.jpegData(compressionQuality: 0.85) else {
+            throw NSError(domain: "FloorPlan", code: -1,
+                          userInfo: [NSLocalizedDescriptionKey: "Could not encode image as JPEG"])
+        }
+        let ref = storage.reference().child("floorPlans/\(id).jpg")
+        let meta = StorageMetadata()
+        meta.contentType = "image/jpeg"
+        _ = try await ref.putDataAsync(data, metadata: meta)
+        let url = try await ref.downloadURL()
+        return url.absoluteString
+    }
+
+    /// Download a floor plan image from a Firebase Storage URL.
+    func downloadFloorPlanImage(url: String) async throws -> UIImage {
+        guard let parsedURL = URL(string: url) else {
+            throw NSError(domain: "FloorPlan", code: -2,
+                          userInfo: [NSLocalizedDescriptionKey: "Invalid Storage URL"])
+        }
+        let (data, _) = try await URLSession.shared.data(from: parsedURL)
+        guard let image = UIImage(data: data) else {
+            throw NSError(domain: "FloorPlan", code: -3,
+                          userInfo: [NSLocalizedDescriptionKey: "Could not decode downloaded image"])
+        }
+        return image
+    }
+
+    /// Delete a floor plan image from Firebase Storage.
+    func deleteFloorPlanImage(id: String) async throws {
+        try await storage.reference().child("floorPlans/\(id).jpg").delete()
+    }
+
 
     // —— HAZARDS ——————————————————————————————————————————————————————————
 

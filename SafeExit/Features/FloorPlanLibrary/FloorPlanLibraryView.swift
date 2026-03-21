@@ -37,10 +37,13 @@ enum FloorPlanStatus: String, Codable, CaseIterable {
 
 @MainActor
 final class FloorPlanLibraryViewModel: ObservableObject {
-    @Published var entries: [FloorPlanEntry] = []
-    @Published var searchText = ""
-    @Published private(set) var activeMapID: String?
+    @Published var entries:    [FloorPlanEntry] = []
+    @Published var searchText  = ""
+    @Published var syncStatus: SyncStatus       = .idle
+    @Published private(set) var activeMapID:    String?
     @Published private(set) var activeMapImage: UIImage?
+
+    private let db = FirestoreService.shared
 
     var filtered: [FloorPlanEntry] {
         searchText.isEmpty ? entries : entries.filter {
@@ -49,69 +52,133 @@ final class FloorPlanLibraryViewModel: ObservableObject {
     }
 
     init() {
-        load()
-        // Restore which map was active
-        let savedID = UserDefaults.standard.string(forKey: "active_map_id")
-        if let id = savedID, entries.contains(where: { $0.id == id }) {
-            activeMapID = id
-            activeMapImage = thumbnail(for: id)
-            // Ensure entry statuses are consistent with the saved active ID
-            for i in entries.indices {
-                if entries[i].id == id {
-                    entries[i].status = .active
-                } else if entries[i].status == .active {
-                    entries[i].status = .draft
+        loadLocal()
+        restoreActiveMap()
+        Task { await loadFromFirestore() }
+    }
+
+    // MARK: - Firestore + Storage sync
+
+    func loadFromFirestore() async {
+        syncStatus = .syncing
+        do {
+            let records = try await db.fetchFloorPlanRecords()
+            var merged  = entries
+            for record in records {
+                let entry = FloorPlanEntry(
+                    id:           record.id,
+                    name:         record.name,
+                    floorLabel:   record.floorLabel,
+                    status:       FloorPlanStatus(rawValue: record.status) ?? .draft,
+                    lastModified: record.lastModified
+                )
+                if let i = merged.firstIndex(where: { $0.id == record.id }) {
+                    merged[i] = entry
+                } else {
+                    merged.append(entry)
+                }
+                // Download image from Storage if not cached locally
+                if thumbnail(for: record.id) == nil, let urlStr = record.imageURL {
+                    if let img = try? await db.downloadFloorPlanImage(url: urlStr) {
+                        saveImage(img, id: record.id)
+                    }
                 }
             }
+            merged.sort { $0.lastModified > $1.lastModified }
+            entries = merged
+            persistLocal()
+            restoreActiveMap()
+            syncStatus = .synced
+        } catch {
+            syncStatus = .error(error.localizedDescription)
         }
     }
 
     // MARK: - Public actions
 
-    /// Import a new map. If status is .active it becomes the live map immediately.
+    /// Import a new map — saves locally, uploads image to Firebase Storage, writes metadata to Firestore.
     func add(name: String, floorLabel: String, image: UIImage) {
-        var entry = FloorPlanEntry(name: name, floorLabel: floorLabel, status: .active, lastModified: Date())
+        let entry = FloorPlanEntry(name: name, floorLabel: floorLabel,
+                                   status: .active, lastModified: Date())
         saveImage(image, id: entry.id)
 
         // New map takes over as active; push previous active to draft
         for i in entries.indices where entries[i].status == .active {
             entries[i].status = .draft
         }
-        activeMapID = entry.id
+        activeMapID    = entry.id
         activeMapImage = image
         UserDefaults.standard.set(entry.id, forKey: "active_map_id")
 
         entries.insert(entry, at: 0)
-        persist()
+        persistLocal()
+        firestoreSync { [weak self] in
+            guard let self else { return }
+            // 1 — Upload full image to Firebase Storage
+            let imageURL = try await self.db.uploadFloorPlanImage(image, id: entry.id)
+            // 2 — Save metadata + download URL to Firestore
+            let record = FloorPlanRecord(
+                id:           entry.id,
+                name:         entry.name,
+                floorLabel:   entry.floorLabel,
+                status:       entry.status.rawValue,
+                lastModified: entry.lastModified,
+                imageURL:     imageURL
+            )
+            try await self.db.saveFloorPlanRecord(record)
+            // 3 — Update previously-active entries to Draft in Firestore
+            for e in self.entries where e.status == .draft && e.id != entry.id {
+                try await self.db.updateFloorPlanFields(id: e.id, fields: ["status": "Draft"])
+            }
+        }
     }
 
     /// Set a map as the active live map. All others become Draft.
     func setActive(_ entry: FloorPlanEntry) {
         guard let idx = entries.firstIndex(where: { $0.id == entry.id }) else { return }
         for i in entries.indices {
-            entries[i].status = entries[i].id == entry.id ? .active : (entries[i].status == .active ? .draft : entries[i].status)
+            entries[i].status = entries[i].id == entry.id ? .active
+                : (entries[i].status == .active ? .draft : entries[i].status)
         }
         entries[idx].lastModified = Date()
-        activeMapID = entry.id
+        activeMapID    = entry.id
         activeMapImage = thumbnail(for: entry.id)
         UserDefaults.standard.set(entry.id, forKey: "active_map_id")
-        persist()
+        persistLocal()
+        let snapshot = entries
+        firestoreSync { [weak self] in
+            guard let self else { return }
+            for e in snapshot {
+                try await self.db.updateFloorPlanFields(
+                    id: e.id,
+                    fields: ["status": e.status.rawValue,
+                             "lastModified": e.lastModified]
+                )
+            }
+        }
     }
 
     /// Deactivate a map (sets it to Draft). Live map goes blank.
     func deactivate(_ entry: FloorPlanEntry) {
         guard let idx = entries.firstIndex(where: { $0.id == entry.id }) else { return }
-        entries[idx].status = .draft
+        entries[idx].status       = .draft
         entries[idx].lastModified = Date()
         if activeMapID == entry.id {
-            activeMapID = nil
+            activeMapID    = nil
             activeMapImage = nil
             UserDefaults.standard.removeObject(forKey: "active_map_id")
         }
-        persist()
+        persistLocal()
+        let updated = entries[idx]
+        firestoreSync { [weak self] in
+            try await self?.db.updateFloorPlanFields(
+                id: updated.id,
+                fields: ["status": updated.status.rawValue,
+                         "lastModified": updated.lastModified]
+            )
+        }
     }
 
-    /// Set status without activating (for Syncing / Draft toggle that isn't Active).
     func setStatusOnly(_ status: FloorPlanStatus, for entry: FloorPlanEntry) {
         switch status {
         case .active:           setActive(entry)
@@ -121,20 +188,33 @@ final class FloorPlanLibraryViewModel: ObservableObject {
 
     func rename(_ entry: FloorPlanEntry, to name: String) {
         guard let i = entries.firstIndex(where: { $0.id == entry.id }) else { return }
-        entries[i].name = name
+        entries[i].name         = name
         entries[i].lastModified = Date()
-        persist()
+        persistLocal()
+        let updated = entries[i]
+        firestoreSync { [weak self] in
+            try await self?.db.updateFloorPlanFields(
+                id: updated.id,
+                fields: ["name": updated.name, "lastModified": updated.lastModified]
+            )
+        }
     }
 
     func delete(_ entry: FloorPlanEntry) {
         if activeMapID == entry.id {
-            activeMapID = nil
+            activeMapID    = nil
             activeMapImage = nil
             UserDefaults.standard.removeObject(forKey: "active_map_id")
         }
         entries.removeAll { $0.id == entry.id }
         deleteImage(id: entry.id)
-        persist()
+        persistLocal()
+        firestoreSync { [weak self] in
+            guard let self else { return }
+            // Delete both the Firestore document and the Storage image
+            try await self.db.deleteFloorPlanRecord(id: entry.id)
+            try? await self.db.deleteFloorPlanImage(id: entry.id)  // best-effort
+        }
     }
 
     func thumbnail(for id: String) -> UIImage? {
@@ -151,13 +231,42 @@ final class FloorPlanLibraryViewModel: ObservableObject {
         return "\(Int(diff / 86400)) days ago"
     }
 
-    // MARK: - Persistence
+    // MARK: - Helpers
+
+    private func firestoreSync(_ work: @escaping () async throws -> Void) {
+        Task { [weak self] in
+            self?.syncStatus = .syncing
+            do {
+                try await work()
+                self?.syncStatus = .synced
+            } catch {
+                self?.syncStatus = .error(error.localizedDescription)
+            }
+        }
+    }
 
     private func setStatusDirect(_ status: FloorPlanStatus, id: String) {
         guard let i = entries.firstIndex(where: { $0.id == id }) else { return }
         entries[i].status = status
-        persist()
+        persistLocal()
+        firestoreSync { [weak self] in
+            try await self?.db.updateFloorPlanFields(id: id, fields: ["status": status.rawValue])
+        }
     }
+
+    private func restoreActiveMap() {
+        let savedID = UserDefaults.standard.string(forKey: "active_map_id")
+        if let id = savedID, entries.contains(where: { $0.id == id }) {
+            activeMapID    = id
+            activeMapImage = thumbnail(for: id)
+            for i in entries.indices {
+                if entries[i].id == id { entries[i].status = .active }
+                else if entries[i].status == .active { entries[i].status = .draft }
+            }
+        }
+    }
+
+    // MARK: - Local persistence
 
     private func imageURL(for id: String) -> URL? {
         FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?
@@ -165,7 +274,7 @@ final class FloorPlanLibraryViewModel: ObservableObject {
     }
 
     private func saveImage(_ image: UIImage, id: String) {
-        guard let url = imageURL(for: id),
+        guard let url  = imageURL(for: id),
               let data = image.jpegData(compressionQuality: 0.85) else { return }
         try? data.write(to: url, options: .atomic)
     }
@@ -177,13 +286,13 @@ final class FloorPlanLibraryViewModel: ObservableObject {
 
     private let storeKey = "floorplan_library_v1"
 
-    private func persist() {
+    private func persistLocal() {
         guard let data = try? JSONEncoder().encode(entries) else { return }
         UserDefaults.standard.set(data, forKey: storeKey)
     }
 
-    private func load() {
-        guard let data = UserDefaults.standard.data(forKey: storeKey),
+    private func loadLocal() {
+        guard let data    = UserDefaults.standard.data(forKey: storeKey),
               let decoded = try? JSONDecoder().decode([FloorPlanEntry].self, from: data) else { return }
         entries = decoded
     }
@@ -232,6 +341,10 @@ struct FloorPlanLibraryView: View {
                         .tracking(2)
                         .foregroundStyle(AppTheme.textSec)
                     Spacer()
+                    // Firestore sync indicator
+                    Image(systemName: vm.syncStatus.icon)
+                        .font(.system(size: 13))
+                        .foregroundStyle(vm.syncStatus.color)
                     Text("\(vm.entries.count) Total")
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(AppTheme.textSec)
