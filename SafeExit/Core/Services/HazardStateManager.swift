@@ -25,4 +25,29 @@ final class HazardStateManager {
     func reset() {
         activeHazards.removeAll()
     }
+
+    // Add a user-tapped ad-hoc hazard. Replaces any existing ad-hoc hazard on the same node.
+    func addAdHocHazard(nodeID: String, nodeName: String, severity: HazardSeverity) {
+        activeHazards.removeAll { $0.id.hasPrefix("adhoc-\(nodeID)-") }
+        let hazard = HazardEvent(
+            id: "adhoc-\(nodeID)-\(UUID().uuidString)",
+            title: "\(severity.displayTitle) – \(nodeName)",
+            targetNodeIDs: [nodeID],
+            targetEdgeIDs: [],
+            severity: severity,
+            status: .reported,
+            confidence: .high,
+            timestamp: Date()
+        )
+        activeHazards.append(hazard)
+    }
+
+    // Remove all ad-hoc hazards placed on a specific node.
+    func removeAdHocHazards(nodeID: String) {
+        activeHazards.removeAll { $0.id.hasPrefix("adhoc-\(nodeID)-") }
+    }
+
+    func hasActiveHazard(nodeID: String) -> Bool {
+        activeHazards.contains { $0.targetNodeIDs.contains(nodeID) }
+    }
 }

@@ -2,33 +2,64 @@ import SwiftUI
 
 struct MainTabView: View {
     @EnvironmentObject private var viewModel: AppViewModel
+    @EnvironmentObject private var authVM: AuthViewModel
+    @StateObject private var floorPlanVM = FloorPlanLibraryViewModel()
     @State private var selectedTab = 0
     @State private var showEmergency = false
+
+    private var isSecurity: Bool { authVM.userRole == .security }
 
     private var hasBlockedHazard: Bool {
         viewModel.activeHazards.contains { $0.severity == .blocked }
     }
 
+    // MARK: - Tab definitions
+
+    private struct TabDef {
+        let icon: String
+        let label: String
+    }
+
+    private var tabs: [TabDef] {
+        if isSecurity {
+            return [
+                TabDef(icon: "map.fill",                                   label: "Map"),
+                TabDef(icon: "building.2.fill",                            label: "Plans"),
+                TabDef(icon: "exclamationmark.triangle.fill",              label: "Admin"),
+                TabDef(icon: "arrow.triangle.turn.up.right.diamond.fill",  label: "Route"),
+                TabDef(icon: "person.fill",                                label: "Profile"),
+            ]
+        } else {
+            return [
+                TabDef(icon: "map.fill",                                   label: "Map"),
+                TabDef(icon: "arrow.triangle.turn.up.right.diamond.fill",  label: "Route"),
+                TabDef(icon: "person.fill",                                label: "Profile"),
+            ]
+        }
+    }
+
+    // MARK: - Body
+
     var body: some View {
         ZStack(alignment: .bottom) {
             AppTheme.bg.ignoresSafeArea()
 
-            // Tab content — fills above the custom tab bar
+            // Tab content
             Group {
-                switch selectedTab {
-                case 0: LiveMapView()
-                case 1: RouteDetailView()
-                case 2: ProfileView()
-                default: LiveMapView()
+                if isSecurity {
+                    securityContent
+                } else {
+                    employeeContent
                 }
             }
+            .environmentObject(floorPlanVM)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .padding(.bottom, 80) // make room for tab bar
+            .padding(.bottom, 80)
 
             // Custom tab bar
             VStack(spacing: 0) {
-                // Emergency banner strip (appears above tab bar when hazard active)
-                if hasBlockedHazard {
+                // Emergency banner (security only)
+                if isSecurity && hasBlockedHazard {
                     Button { showEmergency = true } label: {
                         HStack(spacing: 10) {
                             Image(systemName: "exclamationmark.triangle.fill")
@@ -50,30 +81,51 @@ struct MainTabView: View {
 
                 // Tab bar
                 HStack(spacing: 0) {
-                    TabBarItem(icon: "map.fill",                   label: "Map",    index: 0, selected: $selectedTab)
-                    TabBarItem(icon: "arrow.triangle.turn.up.right.diamond.fill", label: "Route",  index: 1, selected: $selectedTab)
-                    TabBarItem(icon: "person.fill",                label: "Profile", index: 2, selected: $selectedTab)
+                    ForEach(Array(tabs.enumerated()), id: \.offset) { i, tab in
+                        TabBarItem(icon: tab.icon, label: tab.label,
+                                   index: i, selected: $selectedTab,
+                                   accentColor: isSecurity ? AppTheme.amber : AppTheme.green)
+                    }
                 }
                 .frame(height: 60)
                 .background(AppTheme.cardBg)
                 .overlay(alignment: .top) {
                     Rectangle().fill(AppTheme.divider).frame(height: 1)
                 }
-                // bottom safe area fill
-                .background(
-                    AppTheme.cardBg.ignoresSafeArea(edges: .bottom)
-                )
+                .background(AppTheme.cardBg.ignoresSafeArea(edges: .bottom))
             }
         }
         .ignoresSafeArea(edges: .bottom)
         .animation(.easeInOut(duration: 0.25), value: hasBlockedHazard)
         .preferredColorScheme(.dark)
         .fullScreenCover(isPresented: $showEmergency) {
-            EmergencyActiveView()
-                .environmentObject(viewModel)
+            EmergencyActiveView().environmentObject(viewModel)
         }
-        .onAppear {
-            viewModel.recomputeRoute()
+        .onAppear { viewModel.recomputeRoute() }
+        .onChange(of: authVM.userRole) { _ in selectedTab = 0 }
+    }
+
+    // MARK: - Role-specific content
+
+    @ViewBuilder
+    private var securityContent: some View {
+        switch selectedTab {
+        case 0: LiveMapView()
+        case 1: FloorPlanLibraryView()
+        case 2: AdminHazardPanelView()
+        case 3: RouteDetailView()
+        case 4: ProfileView()
+        default: LiveMapView()
+        }
+    }
+
+    @ViewBuilder
+    private var employeeContent: some View {
+        switch selectedTab {
+        case 0: LiveMapView()
+        case 1: RouteDetailView()
+        case 2: ProfileView()
+        default: LiveMapView()
         }
     }
 }
@@ -85,6 +137,7 @@ private struct TabBarItem: View {
     let label: String
     let index: Int
     @Binding var selected: Int
+    let accentColor: Color
 
     var isSelected: Bool { selected == index }
 
@@ -93,10 +146,10 @@ private struct TabBarItem: View {
             VStack(spacing: 4) {
                 Image(systemName: icon)
                     .font(.system(size: 20, weight: isSelected ? .bold : .regular))
-                    .foregroundStyle(isSelected ? AppTheme.green : AppTheme.textDim)
+                    .foregroundStyle(isSelected ? accentColor : AppTheme.textDim)
                 Text(label)
                     .font(.system(size: 10, weight: isSelected ? .bold : .regular))
-                    .foregroundStyle(isSelected ? AppTheme.green : AppTheme.textDim)
+                    .foregroundStyle(isSelected ? accentColor : AppTheme.textDim)
             }
             .frame(maxWidth: .infinity)
             .contentShape(Rectangle())

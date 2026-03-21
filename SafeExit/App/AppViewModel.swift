@@ -61,6 +61,21 @@ final class AppViewModel: ObservableObject {
         recomputeRoute()
     }
 
+    func placeAdHocHazard(nodeID: String, severity: HazardSeverity) {
+        guard let node = buildingPackage?.node(id: nodeID) else { return }
+        container.hazardStateManager.addAdHocHazard(nodeID: nodeID, nodeName: node.name, severity: severity)
+        recomputeRoute()
+    }
+
+    func clearAdHocHazards(nodeID: String) {
+        container.hazardStateManager.removeAdHocHazards(nodeID: nodeID)
+        recomputeRoute()
+    }
+
+    func nodeHasHazard(_ nodeID: String) -> Bool {
+        container.hazardStateManager.hasActiveHazard(nodeID: nodeID)
+    }
+
     func recomputeRoute() {
         guard let buildingPackage, let selectedStartNodeID else {
             routeResult = nil

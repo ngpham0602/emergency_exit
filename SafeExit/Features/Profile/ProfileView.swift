@@ -7,6 +7,7 @@ struct ProfileView: View {
     @State private var liveLocation       = true
     @State private var biometricLock      = false
     @State private var showSignOutConfirm = false
+    @State private var showFirebaseTest   = false
 
     private let safetyContacts: [SafetyContact] = [
         SafetyContact(name: "Emergency Response", role: "Security",       icon: "shield.fill"),
@@ -74,7 +75,7 @@ struct ProfileView: View {
                             .font(.system(size: 20, weight: .black))
                             .foregroundStyle(AppTheme.textPri)
 
-                        Text(auth.userRole.uppercased())
+                        Text(auth.userRole.rawValue.uppercased())
                             .font(.system(size: 11, weight: .bold, design: .monospaced))
                             .tracking(2)
                             .foregroundStyle(AppTheme.textSec)
@@ -233,6 +234,25 @@ struct ProfileView: View {
                             .darkCard()
                         }
 
+                        // Database test
+                        Button { showFirebaseTest = true } label: {
+                            HStack {
+                                Image(systemName: "bolt.horizontal.circle")
+                                    .font(.system(size: 16))
+                                Text("Firebase DB Test")
+                                    .font(.system(size: 15, weight: .semibold))
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(AppTheme.textDim)
+                            }
+                            .foregroundStyle(AppTheme.textPri)
+                            .padding(16)
+                            .background(AppTheme.cardBg)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppTheme.border, lineWidth: 1))
+                        }
+
                         // Sign out
                         Button { showSignOutConfirm = true } label: {
                             HStack {
@@ -262,6 +282,7 @@ struct ProfileView: View {
                 }
             }
         }
+        .sheet(isPresented: $showFirebaseTest) { FirebaseTestView() }
         .confirmationDialog("Sign Out", isPresented: $showSignOutConfirm, titleVisibility: .visible) {
             Button("Sign Out", role: .destructive) { auth.signOut() }
             Button("Cancel", role: .cancel) {}

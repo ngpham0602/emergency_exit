@@ -1,5 +1,5 @@
 import SwiftUI
-import FireBase
+import Firebase
 
 
 @main

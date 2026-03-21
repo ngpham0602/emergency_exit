@@ -1,51 +1,108 @@
 import SwiftUI
 
 struct FirebaseTestView: View {
-    @State private var message = "Connecting to Firebase..."
-    @State private var buildingName = ""
-    @State private var floorLabel = ""
+    @State private var readMessage = ""
+    @State private var writeMessage = ""
+    @State private var isLoading = false
 
     var body: some View {
         VStack(spacing: 24) {
-            Image(systemName: "building.2.fill")
-                .font(.system(size: 60))
-                .foregroundColor(.green)
 
-            Text("SafeExit — Database Test")
-                .font(.title2).bold()
+            Text("Firebase Test")
+                .font(.title).bold()
 
-            Text(message)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
+            // ── WRITE TEST ──────────────────────────
+            Button {
+                Task { await sendTestData() }
+            } label: {
+                Label("Send Test Building", systemImage: "arrow.up.circle.fill")
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.blue)
+                    .foregroundColor(.white)
+                    .cornerRadius(12)
+            }
 
-            if !buildingName.isEmpty {
-                VStack(spacing: 8) {
-                    Label("Firebase Connected!", systemImage: "checkmark.circle.fill")
-                        .foregroundColor(.green)
-                        .bold()
-                    Text("Building: \(buildingName)")
-                    Text("Floor: \(floorLabel)")
-                }
-                .padding()
-                .background(Color.green.opacity(0.15))
-                .cornerRadius(12)
+            if !writeMessage.isEmpty {
+                Text(writeMessage)
+                    .foregroundColor(
+                        writeMessage.contains("✅") ? .green : .red
+                    )
+                    .multilineTextAlignment(.center)
+            }
+
+            Divider()
+
+            // ── READ TEST ───────────────────────────
+            Button {
+                Task { await readTestData() }
+            } label: {
+                Label("Read From Database", systemImage: "arrow.down.circle.fill")
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.green)
+                    .foregroundColor(.white)
+                    .cornerRadius(12)
+            }
+
+            if !readMessage.isEmpty {
+                Text(readMessage)
+                    .foregroundColor(
+                        readMessage.contains("✅") ? .green : .red
+                    )
+                    .multilineTextAlignment(.center)
+            }
+
+            if isLoading {
+                ProgressView()
             }
         }
         .padding()
-        .task {
-            do {
-                let buildings = try await FirestoreService.shared.fetchBuildings()
-                guard let first = buildings.first, let id = first.id else {
-                    message = "No buildings found — add test data in Firebase console"
-                    return
-                }
-                buildingName = first.name
-                let floors = try await FirestoreService.shared.fetchFloors(buildingId: id)
-                floorLabel = floors.first?.floorLabel ?? "No floors found"
-                message = "✅ Database working perfectly"
-            } catch {
-                message = "❌ Error: \(error.localizedDescription)"
-            }
+    }
+
+    // ── SEND DATA TO FIREBASE ──────────────────────
+    func sendTestData() async {
+        isLoading = true
+        writeMessage = ""
+
+        let testBuilding = Building(
+            id: nil,
+            name: "Test Building Sydney",
+            address: "123 Test Street Sydney",
+            type: "mall",
+            verified: false,
+            uploadCount: 1,
+            confidenceScore: 0.5
+        )
+
+        do {
+            let newId = try await FirestoreService.shared.createBuilding(testBuilding)
+            writeMessage = "✅ Saved! Document ID: \(newId)"
+        } catch {
+            writeMessage = "❌ Error: \(error.localizedDescription)"
         }
+
+        isLoading = false
+    }
+
+    // ── READ DATA FROM FIREBASE ────────────────────
+    func readTestData() async {
+        isLoading = true
+        readMessage = ""
+
+        do {
+            let buildings = try await FirestoreService.shared.fetchBuildings()
+
+            if buildings.isEmpty {
+                readMessage = "⚠️ No buildings found in database"
+            } else {
+                let names = buildings.map { $0.name }.joined(separator: "\n")
+                readMessage = "✅ Found \(buildings.count) building(s):\n\(names)"
+            }
+        } catch {
+            readMessage = "❌ Error: \(error.localizedDescription)"
+        }
+
+        isLoading = false
     }
 }

@@ -1133,8 +1133,8 @@ struct MiniFloorplanView: View {
     var body: some View {
         Canvas { context, size in
             let w = size.width, h = size.height
-            let lineStyle = GraphicsContext.Stroke(lineWidth: 1.5, lineCap: .round)
-            let roomStyle = GraphicsContext.Stroke(lineWidth: 1.0, lineCap: .round)
+            let lineStyle = StrokeStyle(lineWidth: 1.5, lineCap: .round)
+            let roomStyle = StrokeStyle(lineWidth: 1.0, lineCap: .round)
             let color = accentColor.opacity(0.6)
             let faint = accentColor.opacity(0.2)
 
@@ -1168,7 +1168,7 @@ struct MiniFloorplanView: View {
             route.move(to: CGPoint(x: w * 0.3, y: h * 0.68))
             route.addLine(to: CGPoint(x: w - 20, y: h * 0.68))
             context.stroke(route, with: .color(accentColor.opacity(0.8)),
-                           style: GraphicsContext.Stroke(lineWidth: 2, lineCap: .round, dash: [5, 4]))
+                           style: StrokeStyle(lineWidth: 2, lineCap: .round, dash: [5, 4]))
 
             // Exit marker
             context.fill(

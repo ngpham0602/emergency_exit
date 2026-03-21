@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		2E7187992F6EACA10000D817 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 2E7187982F6EACA10000D817 /* FirebaseAuth */; };
+		2E71879B2F6EACA10000D817 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 2E71879A2F6EACA10000D817 /* FirebaseFirestore */; };
+		2E71879D2F6EACA10000D817 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = 2E71879C2F6EACA10000D817 /* FirebaseStorage */; };
+		2E71879F2F6EAD670000D817 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 2E71879E2F6EAD660000D817 /* GoogleService-Info.plist */; };
 		A00000000000000000000101 /* SafeExitApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000201 /* SafeExitApp.swift */; };
 		A00000000000000000000102 /* AppContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000202 /* AppContainer.swift */; };
 		A00000000000000000000103 /* AppViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000203 /* AppViewModel.swift */; };
@@ -36,6 +40,15 @@
 		A00000000000000000000127 /* ReportHazardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000226 /* ReportHazardView.swift */; };
 		A00000000000000000000128 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000227 /* ProfileView.swift */; };
 		A00000000000000000000129 /* EmergencyActiveView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000228 /* EmergencyActiveView.swift */; };
+		A0000000000000000000012A /* FloorPlanLibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000229 /* FloorPlanLibraryView.swift */; };
+		A0000000000000000000012B /* Building.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000022A /* Building.swift */; };
+		A0000000000000000000012C /* Floor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000022B /* Floor.swift */; };
+		A0000000000000000000012D /* Hazard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000022C /* Hazard.swift */; };
+		A0000000000000000000012E /* MapEdge.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000022D /* MapEdge.swift */; };
+		A0000000000000000000012F /* MapNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000022E /* MapNode.swift */; };
+		A00000000000000000000130 /* FirestoreService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000022F /* FirestoreService.swift */; };
+		A00000000000000000000131 /* DesignConceptsPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000230 /* DesignConceptsPreview.swift */; };
+		A00000000000000000000132 /* FirebaseTestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000231 /* FirebaseTestView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -49,6 +62,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		2E71879E2F6EAD660000D817 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		A00000000000000000000201 /* SafeExitApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafeExitApp.swift; sourceTree = "<group>"; };
 		A00000000000000000000202 /* AppContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppContainer.swift; sourceTree = "<group>"; };
 		A00000000000000000000203 /* AppViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppViewModel.swift; sourceTree = "<group>"; };
@@ -77,6 +91,15 @@
 		A00000000000000000000226 /* ReportHazardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportHazardView.swift; sourceTree = "<group>"; };
 		A00000000000000000000227 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
 		A00000000000000000000228 /* EmergencyActiveView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmergencyActiveView.swift; sourceTree = "<group>"; };
+		A00000000000000000000229 /* FloorPlanLibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloorPlanLibraryView.swift; sourceTree = "<group>"; };
+		A0000000000000000000022A /* Building.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Building.swift; sourceTree = "<group>"; };
+		A0000000000000000000022B /* Floor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Floor.swift; sourceTree = "<group>"; };
+		A0000000000000000000022C /* Hazard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Hazard.swift; sourceTree = "<group>"; };
+		A0000000000000000000022D /* MapEdge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapEdge.swift; sourceTree = "<group>"; };
+		A0000000000000000000022E /* MapNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapNode.swift; sourceTree = "<group>"; };
+		A0000000000000000000022F /* FirestoreService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirestoreService.swift; sourceTree = "<group>"; };
+		A00000000000000000000230 /* DesignConceptsPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignConceptsPreview.swift; sourceTree = "<group>"; };
+		A00000000000000000000231 /* FirebaseTestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirebaseTestView.swift; sourceTree = "<group>"; };
 		A00000000000000000000401 /* SafeExit.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SafeExit.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A00000000000000000000402 /* SafeExitTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SafeExitTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -86,6 +109,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2E7187992F6EACA10000D817 /* FirebaseAuth in Frameworks */,
+				2E71879B2F6EACA10000D817 /* FirebaseFirestore in Frameworks */,
+				2E71879D2F6EACA10000D817 /* FirebaseStorage in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -164,6 +190,8 @@
 				A00000000000000000000622 /* Route */,
 				A00000000000000000000623 /* Hazard */,
 				A00000000000000000000624 /* Profile */,
+				A00000000000000000000625 /* FloorPlanLibrary */,
+				A00000000000000000000626 /* DesignPreview */,
 			);
 			path = Features;
 			sourceTree = "<group>";
@@ -183,6 +211,7 @@
 			children = (
 				A00000000000000000000617 /* BuildingPackages */,
 				A00000000000000000000618 /* QRSeeds */,
+				2E71879E2F6EAD660000D817 /* GoogleService-Info.plist */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -234,6 +263,11 @@
 				A00000000000000000000205 /* BuildingPackage.swift */,
 				A00000000000000000000206 /* HazardModels.swift */,
 				A00000000000000000000207 /* RouteModels.swift */,
+				A0000000000000000000022A /* Building.swift */,
+				A0000000000000000000022B /* Floor.swift */,
+				A0000000000000000000022C /* Hazard.swift */,
+				A0000000000000000000022D /* MapEdge.swift */,
+				A0000000000000000000022E /* MapNode.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -251,6 +285,7 @@
 			children = (
 				A00000000000000000000209 /* BuildingPackageRepository.swift */,
 				A00000000000000000000210 /* HazardStateManager.swift */,
+				A0000000000000000000022F /* FirestoreService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -283,6 +318,7 @@
 			isa = PBXGroup;
 			children = (
 				A00000000000000000000223 /* MainTabView.swift */,
+				A00000000000000000000231 /* FirebaseTestView.swift */,
 			);
 			path = Main;
 			sourceTree = "<group>";
@@ -317,6 +353,22 @@
 				A00000000000000000000227 /* ProfileView.swift */,
 			);
 			path = Profile;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000625 /* FloorPlanLibrary */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000229 /* FloorPlanLibraryView.swift */,
+			);
+			path = FloorPlanLibrary;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000626 /* DesignPreview */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000230 /* DesignConceptsPreview.swift */,
+			);
+			path = DesignPreview;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -385,6 +437,9 @@
 				Base,
 			);
 			mainGroup = A00000000000000000000601;
+			packageReferences = (
+				2E7187972F6EACA10000D817 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+			);
 			productRefGroup = A00000000000000000000604 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -401,6 +456,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A00000000000000000000116 /* Assets.xcassets in Resources */,
+				2E71879F2F6EAD670000D817 /* GoogleService-Info.plist in Resources */,
 				A00000000000000000000117 /* demo_building.json in Resources */,
 				A00000000000000000000118 /* qr_seeds.json in Resources */,
 			);
@@ -445,6 +501,15 @@
 				A00000000000000000000127 /* ReportHazardView.swift in Sources */,
 				A00000000000000000000128 /* ProfileView.swift in Sources */,
 				A00000000000000000000129 /* EmergencyActiveView.swift in Sources */,
+				A0000000000000000000012A /* FloorPlanLibraryView.swift in Sources */,
+				A0000000000000000000012B /* Building.swift in Sources */,
+				A0000000000000000000012C /* Floor.swift in Sources */,
+				A0000000000000000000012D /* Hazard.swift in Sources */,
+				A0000000000000000000012E /* MapEdge.swift in Sources */,
+				A0000000000000000000012F /* MapNode.swift in Sources */,
+				A00000000000000000000130 /* FirestoreService.swift in Sources */,
+				A00000000000000000000131 /* DesignConceptsPreview.swift in Sources */,
+				A00000000000000000000132 /* FirebaseTestView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -683,6 +748,35 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		2E7187972F6EACA10000D817 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.11.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		2E7187982F6EACA10000D817 /* FirebaseAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2E7187972F6EACA10000D817 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAuth;
+		};
+		2E71879A2F6EACA10000D817 /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2E7187972F6EACA10000D817 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestore;
+		};
+		2E71879C2F6EACA10000D817 /* FirebaseStorage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2E7187972F6EACA10000D817 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseStorage;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = A00000000000000000000001 /* Project object */;
 }
