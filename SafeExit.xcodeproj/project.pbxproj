@@ -49,6 +49,7 @@
 		A00000000000000000000130 /* FirestoreService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000022F /* FirestoreService.swift */; };
 		A00000000000000000000131 /* DesignConceptsPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000230 /* DesignConceptsPreview.swift */; };
 		A00000000000000000000132 /* FirebaseTestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000231 /* FirebaseTestView.swift */; };
+		A00000000000000000000133 /* MapEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000232 /* MapEditorView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -100,6 +101,7 @@
 		A0000000000000000000022F /* FirestoreService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirestoreService.swift; sourceTree = "<group>"; };
 		A00000000000000000000230 /* DesignConceptsPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignConceptsPreview.swift; sourceTree = "<group>"; };
 		A00000000000000000000231 /* FirebaseTestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirebaseTestView.swift; sourceTree = "<group>"; };
+		A00000000000000000000232 /* MapEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapEditorView.swift; sourceTree = "<group>"; };
 		A00000000000000000000401 /* SafeExit.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SafeExit.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A00000000000000000000402 /* SafeExitTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SafeExitTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -327,6 +329,7 @@
 			isa = PBXGroup;
 			children = (
 				A00000000000000000000224 /* LiveMapView.swift */,
+				A00000000000000000000232 /* MapEditorView.swift */,
 			);
 			path = Map;
 			sourceTree = "<group>";
@@ -510,6 +513,7 @@
 				A00000000000000000000130 /* FirestoreService.swift in Sources */,
 				A00000000000000000000131 /* DesignConceptsPreview.swift in Sources */,
 				A00000000000000000000132 /* FirebaseTestView.swift in Sources */,
+				A00000000000000000000133 /* MapEditorView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

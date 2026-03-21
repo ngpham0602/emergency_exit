@@ -110,22 +110,22 @@ struct MainTabView: View {
     @ViewBuilder
     private var securityContent: some View {
         switch selectedTab {
-        case 0: LiveMapView()
+        case 0: MapEditorView()
         case 1: FloorPlanLibraryView()
         case 2: AdminHazardPanelView()
         case 3: RouteDetailView()
         case 4: ProfileView()
-        default: LiveMapView()
+        default: MapEditorView()
         }
     }
 
     @ViewBuilder
     private var employeeContent: some View {
         switch selectedTab {
-        case 0: LiveMapView()
+        case 0: MapEditorView()
         case 1: RouteDetailView()
         case 2: ProfileView()
-        default: LiveMapView()
+        default: MapEditorView()
         }
     }
 }
