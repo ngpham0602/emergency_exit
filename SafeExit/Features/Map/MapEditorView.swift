@@ -267,10 +267,21 @@ final class MapEditorViewModel: ObservableObject {
 
 struct MapEditorView: View {
     @EnvironmentObject private var floorPlanVM: FloorPlanLibraryViewModel
+    @EnvironmentObject private var authVM: AuthViewModel
     @StateObject private var vm = MapEditorViewModel()
 
-    @State private var mode:      EditorMode = .addNode
-    @State private var showClear  = false
+    @State private var mode:            EditorMode = .addNode
+    @State private var showClear        = false
+    @State private var showMapSwitcher  = false
+
+    // Zoom & pan state
+    @State private var scale:           CGFloat = 1.0
+    @State private var lastScale:       CGFloat = 1.0
+    @State private var panOffset:       CGSize  = .zero
+    @State private var lastPanOffset:   CGSize  = .zero
+
+    private var isEmployee: Bool { authVM.userRole != .security }
+    private var isZoomed:   Bool { scale != 1.0 || panOffset != .zero }
 
     var body: some View {
         ZStack {
@@ -282,35 +293,72 @@ struct MapEditorView: View {
                 GeometryReader { geo in
                     let size = geo.size
                     ZStack {
-                        // Background floor plan image
-                        if let img = floorPlanVM.activeMapImage {
-                            Image(uiImage: img)
-                                .resizable()
-                                .scaledToFill()
-                                .frame(width: size.width, height: size.height)
-                                .clipped()
-                                .opacity(0.38)
-                        } else {
-                            AppTheme.cardBg
-                        }
 
-                        // Graph drawing canvas
-                        Canvas { ctx, sz in
-                            drawGraph(ctx: &ctx, size: sz,
-                                      nodes: vm.nodes,
-                                      proximityPairs: vm.proximityPairs(),
-                                      routePath: vm.routePath,
-                                      startID: vm.startNodeID)
+                        // ── Layer 1: transformed content (image + graph) ────
+                        ZStack {
+                            if let img = floorPlanVM.activeMapImage {
+                                Image(uiImage: img)
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: size.width, height: size.height)
+                                    .clipped()
+                                    .opacity(0.38)
+                            } else {
+                                AppTheme.cardBg
+                            }
+
+                            Canvas { ctx, sz in
+                                drawGraph(ctx: &ctx, size: sz,
+                                          nodes: vm.nodes,
+                                          proximityPairs: vm.proximityPairs(),
+                                          routePath: vm.routePath,
+                                          startID: vm.startNodeID)
+                            }
                         }
+                        .frame(width: size.width, height: size.height)
+                        .scaleEffect(scale, anchor: .center)
+                        .offset(panOffset)
                         .allowsHitTesting(false)
 
-                        // Tap-detection overlay
+                        // ── Layer 2: gesture overlay (stays at screen coords) ─
                         Color.clear
                             .contentShape(Rectangle())
                             .gesture(
-                                DragGesture(minimumDistance: 0)
-                                    .onEnded { val in handleTap(val.location, in: size) }
+                                SimultaneousGesture(
+                                    // Pinch to zoom
+                                    MagnificationGesture()
+                                        .onChanged { value in
+                                            scale = min(max(lastScale * value, 0.8), 6.0)
+                                        }
+                                        .onEnded { _ in lastScale = scale },
+                                    // Drag: pan when moved, tap when still
+                                    DragGesture(minimumDistance: 0)
+                                        .onChanged { value in
+                                            let d = hypot(value.translation.width,
+                                                          value.translation.height)
+                                            if d > 8 {
+                                                panOffset = CGSize(
+                                                    width:  lastPanOffset.width  + value.translation.width,
+                                                    height: lastPanOffset.height + value.translation.height
+                                                )
+                                            }
+                                        }
+                                        .onEnded { value in
+                                            let d = hypot(value.translation.width,
+                                                          value.translation.height)
+                                            if d < 8 {
+                                                // Treat as a tap — convert to canvas space
+                                                let canvasPt = screenToCanvas(value.startLocation,
+                                                                              in: size)
+                                                handleTap(canvasPt, in: size)
+                                            } else {
+                                                lastPanOffset = panOffset
+                                            }
+                                        }
+                                )
                             )
+
+                        // ── Layer 3: fixed UI — no transform applied ─────────
 
                         // "No floor plan" hint
                         if floorPlanVM.activeMapImage == nil {
@@ -321,12 +369,58 @@ struct MapEditorView: View {
                                 Text("No active floor plan")
                                     .font(.system(size: 12, weight: .semibold))
                                     .foregroundStyle(AppTheme.textSec)
-                                Text("Go to Plans tab to import one")
+                                Text("Tap the map switcher below to choose one")
                                     .font(.system(size: 11))
                                     .foregroundStyle(AppTheme.textDim)
                             }
                             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                             .allowsHitTesting(false)
+                        }
+
+                        // Map Switcher widget — employees only, fixed bottom-left
+                        if isEmployee {
+                            VStack {
+                                Spacer()
+                                HStack {
+                                    Button { showMapSwitcher = true } label: {
+                                        HStack(spacing: 7) {
+                                            ZStack {
+                                                Circle()
+                                                    .fill(AppTheme.green)
+                                                    .frame(width: 22, height: 22)
+                                                Image(systemName: "plus")
+                                                    .font(.system(size: 12, weight: .black))
+                                                    .foregroundStyle(.black)
+                                            }
+                                            VStack(alignment: .leading, spacing: 1) {
+                                                Text("FLOOR PLAN")
+                                                    .font(.system(size: 8, weight: .bold, design: .monospaced))
+                                                    .tracking(1)
+                                                    .foregroundStyle(AppTheme.textDim)
+                                                Text(floorPlanVM.entries.first(where: {
+                                                    $0.id == floorPlanVM.activeMapID
+                                                })?.name ?? "None selected")
+                                                    .font(.system(size: 13, weight: .semibold))
+                                                    .foregroundStyle(AppTheme.textPri)
+                                                    .lineLimit(1)
+                                            }
+                                            Image(systemName: "chevron.up")
+                                                .font(.system(size: 10, weight: .bold))
+                                                .foregroundStyle(AppTheme.textDim)
+                                        }
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 9)
+                                        .background(.ultraThinMaterial)
+                                        .clipShape(Capsule())
+                                        .overlay(Capsule().stroke(AppTheme.border, lineWidth: 1))
+                                        .shadow(color: .black.opacity(0.3), radius: 6, x: 0, y: 2)
+                                    }
+                                    Spacer()
+                                }
+                                .padding(.leading, 12)
+                                .padding(.bottom, 12)
+                            }
+                            .allowsHitTesting(true)
                         }
                     }
                 }
@@ -342,7 +436,26 @@ struct MapEditorView: View {
             await vm.loadFromFirestore(mapID: mapID)
         }
         .onChange(of: floorPlanVM.activeMapID) { newID in
+            // Reset zoom & pan when switching maps
+            withAnimation(.easeOut(duration: 0.25)) {
+                scale = 1.0; lastScale = 1.0
+                panOffset = .zero; lastPanOffset = .zero
+            }
             Task { await vm.loadFromFirestore(mapID: newID ?? "default") }
+        }
+        .sheet(isPresented: $showMapSwitcher) {
+            MapSwitcherSheet(
+                entries:     floorPlanVM.entries,
+                activeMapID: floorPlanVM.activeMapID,
+                thumbnail:   { floorPlanVM.thumbnail(for: $0) },
+                onSelect:    { entry in
+                    floorPlanVM.viewMap(entry)
+                    showMapSwitcher = false
+                }
+            )
+            .presentationDetents([.medium, .large])
+            .presentationBackground(AppTheme.cardBg)
+            .presentationDragIndicator(.visible)
         }
         .confirmationDialog("Clear all nodes?",
                             isPresented: $showClear, titleVisibility: .visible) {
@@ -373,6 +486,24 @@ struct MapEditorView: View {
             Image(systemName: vm.syncStatus.icon)
                 .font(.system(size: 14))
                 .foregroundStyle(vm.syncStatus.color)
+
+            // Zoom level — tap to reset
+            if isZoomed {
+                Button {
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                        scale = 1.0; lastScale = 1.0
+                        panOffset = .zero; lastPanOffset = .zero
+                    }
+                } label: {
+                    Text(String(format: "%.1f×", scale))
+                        .font(.system(size: 11, weight: .bold, design: .monospaced))
+                        .foregroundStyle(AppTheme.amber)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(AppTheme.amber.opacity(0.15))
+                        .clipShape(Capsule())
+                }
+            }
 
             Text("\(vm.nodes.count) nodes")
                 .font(.system(size: 11, weight: .medium, design: .monospaced))
@@ -496,28 +627,50 @@ struct MapEditorView: View {
         .background(AppTheme.cardBg)
     }
 
+    // MARK: Coordinate helpers
+
+    /// Convert a screen-space tap point into the canvas coordinate space,
+    /// accounting for current scale (anchored at center) and pan offset.
+    private func screenToCanvas(_ pt: CGPoint, in size: CGSize) -> CGPoint {
+        CGPoint(
+            x: (pt.x - panOffset.width  - size.width  / 2) / scale + size.width  / 2,
+            y: (pt.y - panOffset.height - size.height / 2) / scale + size.height / 2
+        )
+    }
+
     // MARK: Tap handling
 
     private func handleTap(_ pt: CGPoint, in size: CGSize) {
+        // Threshold stays ~28 screen pixels regardless of zoom level
+        let threshold: CGFloat = 28 / scale
+
         switch mode {
 
         case .addNode:
-            if vm.nearestNode(to: pt, in: size) == nil {
+            if vm.nearestNode(to: pt, in: size, threshold: threshold) == nil {
                 _ = vm.addNode(nx: Double(pt.x / size.width),
                                ny: Double(pt.y / size.height))
             }
 
         case .setStart:
-            if let node = vm.nearestNode(to: pt, in: size) { vm.setStart(node.id) }
+            if let node = vm.nearestNode(to: pt, in: size, threshold: threshold) {
+                vm.setStart(node.id)
+            }
 
         case .markDanger:
-            if let node = vm.nearestNode(to: pt, in: size) { vm.toggleDangerNode(node.id) }
+            if let node = vm.nearestNode(to: pt, in: size, threshold: threshold) {
+                vm.toggleDangerNode(node.id)
+            }
 
         case .markExit:
-            if let node = vm.nearestNode(to: pt, in: size) { vm.toggleExit(node.id) }
+            if let node = vm.nearestNode(to: pt, in: size, threshold: threshold) {
+                vm.toggleExit(node.id)
+            }
 
         case .delete:
-            if let node = vm.nearestNode(to: pt, in: size) { vm.deleteNode(node.id) }
+            if let node = vm.nearestNode(to: pt, in: size, threshold: threshold) {
+                vm.deleteNode(node.id)
+            }
         }
     }
 
@@ -666,7 +819,169 @@ struct MapEditorView: View {
     }
 }
 
+// MARK: - Map Switcher Sheet
+
+private struct MapSwitcherSheet: View {
+    let entries:     [FloorPlanEntry]
+    let activeMapID: String?
+    let thumbnail:   (String) -> UIImage?
+    let onSelect:    (FloorPlanEntry) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+
+            // Header
+            HStack(spacing: 10) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(AppTheme.green)
+                        .frame(width: 32, height: 32)
+                    Image(systemName: "map.fill")
+                        .font(.system(size: 14))
+                        .foregroundStyle(.black)
+                }
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("SWITCH FLOOR PLAN")
+                        .font(.system(size: 10, weight: .bold, design: .monospaced))
+                        .tracking(1.5)
+                        .foregroundStyle(AppTheme.textSec)
+                    Text("Tap a map to load its nodes & path")
+                        .font(.system(size: 13))
+                        .foregroundStyle(AppTheme.textDim)
+                }
+                Spacer()
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 24)
+            .padding(.bottom, 18)
+
+            if entries.isEmpty {
+                VStack(spacing: 10) {
+                    Image(systemName: "map")
+                        .font(.system(size: 36))
+                        .foregroundStyle(AppTheme.textDim)
+                    Text("No floor plans yet")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(AppTheme.textSec)
+                    Text("Ask security to import floor plans in the Plans tab.")
+                        .font(.system(size: 13))
+                        .foregroundStyle(AppTheme.textDim)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 32)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.top, 40)
+            } else {
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 10) {
+                        ForEach(entries) { entry in
+                            MapSwitcherRow(
+                                entry:     entry,
+                                isActive:  entry.id == activeMapID,
+                                thumbnail: thumbnail(entry.id),
+                                onSelect:  { onSelect(entry) }
+                            )
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 32)
+                }
+            }
+        }
+    }
+}
+
+private struct MapSwitcherRow: View {
+    let entry:     FloorPlanEntry
+    let isActive:  Bool
+    let thumbnail: UIImage?
+    let onSelect:  () -> Void
+
+    var body: some View {
+        Button(action: onSelect) {
+            HStack(spacing: 0) {
+
+                // Thumbnail
+                ZStack(alignment: .bottomLeading) {
+                    if let img = thumbnail {
+                        Image(uiImage: img)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 100, height: 72)
+                            .clipped()
+                    } else {
+                        Rectangle()
+                            .fill(AppTheme.cardBg2)
+                            .frame(width: 100, height: 72)
+                            .overlay(
+                                Image(systemName: "map")
+                                    .font(.system(size: 22))
+                                    .foregroundStyle(AppTheme.textDim)
+                            )
+                    }
+                    Text(entry.floorLabel)
+                        .font(.system(size: 9, weight: .bold, design: .monospaced))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 2)
+                        .background(Color.black.opacity(0.65))
+                        .clipShape(RoundedRectangle(cornerRadius: 3))
+                        .padding(6)
+                }
+                .frame(width: 100, height: 72)
+
+                // Info
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(entry.name)
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(AppTheme.textPri)
+                        .lineLimit(1)
+
+                    HStack(spacing: 5) {
+                        Image(systemName: entry.status.icon)
+                            .font(.system(size: 11))
+                            .foregroundStyle(entry.status.color)
+                        Text(entry.status.rawValue)
+                            .font(.system(size: 12))
+                            .foregroundStyle(entry.status.color)
+                    }
+                }
+                .padding(.leading, 14)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                // Active indicator or chevron
+                if isActive {
+                    ZStack {
+                        Circle()
+                            .fill(AppTheme.green)
+                            .frame(width: 28, height: 28)
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 12, weight: .black))
+                            .foregroundStyle(.black)
+                    }
+                    .padding(.trailing, 14)
+                } else {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(AppTheme.textDim)
+                        .padding(.trailing, 14)
+                }
+            }
+            .frame(height: 72)
+            .background(isActive ? AppTheme.green.opacity(0.08) : AppTheme.cardBg2)
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(isActive ? AppTheme.green.opacity(0.5) : AppTheme.border,
+                            lineWidth: isActive ? 1.5 : 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
 #Preview {
     MapEditorView()
         .environmentObject(FloorPlanLibraryViewModel())
+        .environmentObject(AuthViewModel())
 }

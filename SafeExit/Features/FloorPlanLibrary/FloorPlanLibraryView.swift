@@ -222,6 +222,26 @@ final class FloorPlanLibraryViewModel: ObservableObject {
         return UIImage(data: data)
     }
 
+    /// Switch the currently viewed map without changing any status in Firestore.
+    /// Used by the map-switcher widget so employees can browse all floor plans.
+    func viewMap(_ entry: FloorPlanEntry) {
+        activeMapID    = entry.id
+        activeMapImage = thumbnail(for: entry.id)
+        UserDefaults.standard.set(entry.id, forKey: "active_map_id")
+        // Download image in background if not cached locally
+        if activeMapImage == nil {
+            Task {
+                if let records = try? await db.fetchFloorPlanRecords(),
+                   let record  = records.first(where: { $0.id == entry.id }),
+                   let urlStr  = record.imageURL,
+                   let img     = try? await db.downloadFloorPlanImage(url: urlStr) {
+                    saveImage(img, id: entry.id)
+                    activeMapImage = img
+                }
+            }
+        }
+    }
+
     func relativeTime(from date: Date) -> String {
         let diff = Date().timeIntervalSince(date)
         if diff < 60      { return "just now" }
