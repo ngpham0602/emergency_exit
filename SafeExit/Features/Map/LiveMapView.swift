@@ -211,7 +211,7 @@ private struct FloorPlanCanvas: View {
             ctx.fill(Path(outlineRect), with: .color(Color(white: 0.06)))
             ctx.stroke(Path(outlineRect),
                        with: .color(Color(white: 0.18)),
-                       style: GraphicsContext.Stroke(lineWidth: 1.5))
+                       style: StrokeStyle(lineWidth: 1.5))
 
             // --- Draw edges ---
             for edge in building.edges {
@@ -231,18 +231,18 @@ private struct FloorPlanCanvas: View {
                 if isPath {
                     ctx.stroke(edgePath,
                                with: .color(Color(red: 0.22, green: 0.96, blue: 0.29)),
-                               style: GraphicsContext.Stroke(
+                               style: StrokeStyle(
                                 lineWidth: 2.5,
                                 lineCap: .round,
                                 dash: [7, 5]))
                 } else if isHazard {
                     ctx.stroke(edgePath,
                                with: .color(Color(red: 0.90, green: 0.25, blue: 0.25).opacity(0.5)),
-                               style: GraphicsContext.Stroke(lineWidth: 1.5))
+                               style: StrokeStyle(lineWidth: 1.5))
                 } else {
                     ctx.stroke(edgePath,
                                with: .color(Color(white: 0.25)),
-                               style: GraphicsContext.Stroke(lineWidth: 1.0))
+                               style: StrokeStyle(lineWidth: 1.0))
                 }
             }
 
@@ -312,7 +312,7 @@ private struct FloorPlanCanvas: View {
                     let ring = Path(ellipseIn: CGRect(x: center.x - hr, y: center.y - hr,
                                                       width: hr * 2, height: hr * 2))
                     ctx.stroke(ring, with: .color(Color(red: 0.90, green: 0.25, blue: 0.25).opacity(0.6)),
-                               style: GraphicsContext.Stroke(lineWidth: 1.5, dash: [4, 3]))
+                               style: StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
                 }
 
                 // Selected pulse ring
