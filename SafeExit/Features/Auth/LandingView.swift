@@ -1,6 +1,6 @@
 import SwiftUI
 
-// MARK: - Root container (switches between Welcome and Sign In)
+// MARK: - Root container
 
 struct LandingView: View {
     @State private var showSignIn = false
@@ -10,14 +10,10 @@ struct LandingView: View {
             AppTheme.bg.ignoresSafeArea()
             if showSignIn {
                 SignInView(showSignIn: $showSignIn)
-                    .transition(.asymmetric(
-                        insertion: .move(edge: .trailing),
-                        removal: .move(edge: .trailing)))
+                    .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .trailing)))
             } else {
                 WelcomeOnboardingView(showSignIn: $showSignIn)
-                    .transition(.asymmetric(
-                        insertion: .move(edge: .leading),
-                        removal: .move(edge: .leading)))
+                    .transition(.asymmetric(insertion: .move(edge: .leading), removal: .move(edge: .leading)))
             }
         }
         .animation(.easeInOut(duration: 0.28), value: showSignIn)
@@ -34,7 +30,6 @@ struct WelcomeOnboardingView: View {
         VStack(spacing: 0) {
             Spacer().frame(height: 52)
 
-            // Logo mark
             ZStack {
                 RoundedRectangle(cornerRadius: 20)
                     .fill(Color.white)
@@ -51,21 +46,18 @@ struct WelcomeOnboardingView: View {
                 .tracking(6)
                 .foregroundStyle(AppTheme.green)
 
-            // Green underline accent
             Rectangle()
                 .fill(AppTheme.green)
                 .frame(width: 40, height: 2)
                 .padding(.top, 6)
 
-            Spacer().frame(height: 28)
-
-            // Radar + building graphic
-            RadarBuildingGraphic()
-                .frame(width: 300, height: 260)
-
             Spacer().frame(height: 24)
 
-            // Headline
+            IsometricRadarView()
+                .frame(width: 300, height: 270)
+
+            Spacer().frame(height: 20)
+
             VStack(alignment: .leading, spacing: 2) {
                 Text("Your Safety,")
                     .font(.system(size: 32, weight: .bold))
@@ -88,7 +80,6 @@ struct WelcomeOnboardingView: View {
 
             Spacer().frame(height: 20)
 
-            // Feature chips
             HStack(spacing: 8) {
                 LandingChip(icon: "mappin.circle.fill", label: "LIVE MAP")
                 LandingChip(icon: "bolt.fill",          label: "FAST EXIT")
@@ -99,7 +90,6 @@ struct WelcomeOnboardingView: View {
 
             Spacer()
 
-            // CTA
             Button { showSignIn = true } label: {
                 HStack {
                     Text("Get Started")
@@ -149,7 +139,6 @@ struct SignInView: View {
         VStack(spacing: 0) {
             Spacer()
 
-            // Logo
             ZStack {
                 RoundedRectangle(cornerRadius: 18)
                     .fill(Color.white)
@@ -168,9 +157,7 @@ struct SignInView: View {
 
             Spacer().frame(height: 44)
 
-            // Fields
             VStack(spacing: 18) {
-                // Email
                 VStack(alignment: .leading, spacing: 8) {
                     Text("OPERATIONAL EMAIL")
                         .font(.system(size: 10, weight: .bold, design: .monospaced))
@@ -193,12 +180,10 @@ struct SignInView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
-                            .stroke(focus == .email ? AppTheme.green.opacity(0.45) : AppTheme.border,
-                                    lineWidth: 1)
+                            .stroke(focus == .email ? AppTheme.green.opacity(0.45) : AppTheme.border, lineWidth: 1)
                     )
                 }
 
-                // Password
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
                         Text("ACCESS KEY")
@@ -235,14 +220,12 @@ struct SignInView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
-                            .stroke(focus == .password ? AppTheme.green.opacity(0.45) : AppTheme.border,
-                                    lineWidth: 1)
+                            .stroke(focus == .password ? AppTheme.green.opacity(0.45) : AppTheme.border, lineWidth: 1)
                     )
                 }
             }
             .padding(.horizontal, 28)
 
-            // Error
             if let err = auth.signInError {
                 Text(err)
                     .font(.caption)
@@ -253,7 +236,6 @@ struct SignInView: View {
 
             Spacer()
 
-            // Submit
             Button { auth.signIn(email: email, password: password) } label: {
                 HStack {
                     Text("INITIALIZE SESSION")
@@ -295,7 +277,7 @@ struct SignInView: View {
     }
 }
 
-// MARK: - Shared landing components
+// MARK: - Landing chip
 
 private struct LandingChip: View {
     let icon: String
@@ -318,140 +300,264 @@ private struct LandingChip: View {
     }
 }
 
-// MARK: - Radar + Building graphic
+// MARK: - Isometric radar graphic
 
-private struct RadarBuildingGraphic: View {
+private struct IsometricRadarView: View {
     var body: some View {
         ZStack {
             // Concentric radar rings
-            ForEach([1.0, 0.78, 0.58, 0.38], id: \.self) { scale in
+            ForEach([260, 200, 148, 96], id: \.self) { diameter in
                 Circle()
-                    .stroke(AppTheme.green.opacity(scale * 0.13), lineWidth: 1)
-                    .frame(width: 260, height: 260)
-                    .scaleEffect(scale)
+                    .stroke(AppTheme.green.opacity(diameter == 260 ? 0.12 : 0.09), lineWidth: 1)
+                    .frame(width: CGFloat(diameter), height: CGFloat(diameter))
             }
 
-            // Subtle green glow behind building
-            Circle()
-                .fill(AppTheme.green.opacity(0.04))
-                .frame(width: 160, height: 160)
+            // Radial glow behind building
+            RadialGradient(
+                colors: [AppTheme.green.opacity(0.07), Color.clear],
+                center: .center, startRadius: 0, endRadius: 110
+            )
+            .frame(width: 220, height: 220)
+            .clipShape(Circle())
 
-            // Isometric building canvas
-            Canvas { ctx, size in
-                let w = size.width, h = size.height
-                let cx = w * 0.5, cy = h * 0.52
+            // Floor plan canvas
+            IsoFloorPlanCanvas()
+                .frame(width: 270, height: 200)
 
-                let isoW: CGFloat = 88, isoH: CGFloat = 60, depth: CGFloat = 32
+            // Floating icon cards — all dark bg, green icon
+            IconCard(icon: "mappin.circle")
+                .offset(x: 104, y: -90)
 
-                // Top face
-                let top = Path { p in
-                    p.move(to:    CGPoint(x: cx,         y: cy - isoH * 0.5))
-                    p.addLine(to: CGPoint(x: cx + isoW,  y: cy - isoH * 0.5 + depth * 0.4))
-                    p.addLine(to: CGPoint(x: cx,         y: cy - isoH * 0.5 + depth * 0.8))
-                    p.addLine(to: CGPoint(x: cx - isoW,  y: cy - isoH * 0.5 + depth * 0.4))
-                    p.closeSubpath()
-                }
-                ctx.fill(top, with: .color(Color(white: 0.20)))
+            IconCard(icon: "bolt.fill")
+                .offset(x: 112, y: 18)
 
-                // Right face
-                let right = Path { p in
-                    p.move(to:    CGPoint(x: cx + isoW, y: cy - isoH * 0.5 + depth * 0.4))
-                    p.addLine(to: CGPoint(x: cx + isoW, y: cy + isoH * 0.5 + depth * 0.4))
-                    p.addLine(to: CGPoint(x: cx,         y: cy + isoH * 0.5 + depth * 0.8))
-                    p.addLine(to: CGPoint(x: cx,         y: cy - isoH * 0.5 + depth * 0.8))
-                    p.closeSubpath()
-                }
-                ctx.fill(right, with: .color(Color(white: 0.10)))
+            IconCard(icon: "checkmark.shield.fill")
+                .offset(x: -106, y: 72)
+        }
+    }
+}
 
-                // Left face
-                let left = Path { p in
-                    p.move(to:    CGPoint(x: cx - isoW, y: cy - isoH * 0.5 + depth * 0.4))
-                    p.addLine(to: CGPoint(x: cx - isoW, y: cy + isoH * 0.5 + depth * 0.4))
-                    p.addLine(to: CGPoint(x: cx,         y: cy + isoH * 0.5 + depth * 0.8))
-                    p.addLine(to: CGPoint(x: cx,         y: cy - isoH * 0.5 + depth * 0.8))
-                    p.closeSubpath()
-                }
-                ctx.fill(left, with: .color(Color(white: 0.14)))
+// MARK: - Isometric floor plan canvas
 
-                // Interior room dividers on top face (floor plan look)
-                let roomLineColor = Color(red: 0.3, green: 0.6, blue: 1.0).opacity(0.25)
-                let roomStyle = StrokeStyle(lineWidth: 0.6)
-                // Horizontal divider across top face
-                let hDiv = Path { p in
-                    p.move(to:    CGPoint(x: cx - isoW * 0.2, y: cy - isoH * 0.5 + depth * 0.4))
-                    p.addLine(to: CGPoint(x: cx + isoW * 0.8, y: cy - isoH * 0.5 + depth * 0.4 - 8))
-                }
-                ctx.stroke(hDiv, with: .color(roomLineColor), style: roomStyle)
-                // Vertical divider
-                let vDiv = Path { p in
-                    p.move(to:    CGPoint(x: cx + isoW * 0.1, y: cy - isoH * 0.5))
-                    p.addLine(to: CGPoint(x: cx + isoW * 0.1, y: cy - isoH * 0.5 + depth * 0.8))
-                }
-                ctx.stroke(vDiv, with: .color(roomLineColor), style: roomStyle)
+private struct IsoFloorPlanCanvas: View {
+    var body: some View {
+        Canvas { ctx, size in
+            // ── Projection parameters ──────────────────────────────────────
+            let cx  = size.width  * 0.5
+            let cy  = size.height * 0.48
+            // Building grid: W × D units, isoW = half-diamond width in px
+            let isoW: CGFloat = 84   // half diamond width
+            let W:    CGFloat = 16   // grid units wide
+            let D:    CGFloat = 10   // grid units deep
+            let wH:   CGFloat = 17   // wall height px
 
-                // Windows on right face
-                let greenColor = Color(red: 0.22, green: 0.96, blue: 0.29)
-                for row in 0..<3 {
-                    for col in 0..<2 {
-                        let wx = cx + 14 + CGFloat(col) * 28
-                        let wy = cy - 8 + CGFloat(row) * 20
-                        let winRect = CGRect(x: wx, y: wy, width: 11, height: 13)
-                        ctx.fill(Path(winRect),
-                                 with: .color(greenColor.opacity(col == 0 && row == 1 ? 0.85 : 0.25)))
-                    }
-                }
+            // Isometric projection: grid (gx,gy,gz) → screen CGPoint
+            // Top vertex at (cx, cy - isoW*0.5)
+            let yTop = cy - isoW * 0.5
 
-                // Windows on left face
-                for row in 0..<3 {
-                    let wx = cx - 36
-                    let wy = cy - 8 + CGFloat(row) * 20
-                    ctx.fill(Path(CGRect(x: wx, y: wy, width: 10, height: 13)),
-                             with: .color(Color(white: 0.25)))
-                }
-
-                // Blue wireframe edges
-                let edgeColor = Color(red: 0.3, green: 0.6, blue: 1.0).opacity(0.40)
-                let edgeStyle = StrokeStyle(lineWidth: 0.9)
-                ctx.stroke(top,   with: .color(edgeColor), style: edgeStyle)
-                ctx.stroke(right, with: .color(edgeColor), style: edgeStyle)
-                ctx.stroke(left,  with: .color(edgeColor), style: edgeStyle)
+            // Inline helper via nested function (captures local lets)
+            func p(_ gx: CGFloat, _ gy: CGFloat, _ gz: CGFloat = 0) -> CGPoint {
+                CGPoint(
+                    x: cx  + (gx / W - gy / D) * isoW,
+                    y: yTop + (gx / W + gy / D) * isoW * 0.5 - gz * wH
+                )
             }
-            .frame(width: 220, height: 160)
 
-            // Floating icon cards
-            // Map pin — top right, green card
-            FloatingIconCard(icon: "mappin.and.ellipse", isGreen: true)
-                .offset(x: 104, y: -88)
+            // ── Colors ────────────────────────────────────────────────────
+            let cHi  = Color(red: 0.20, green: 0.88, blue: 0.98)   // bright cyan
+            let cMid = cHi.opacity(0.55)
+            let cDim = cHi.opacity(0.28)
+            let cFnt = cHi.opacity(0.10)                           // furniture fill
+            let cWal = Color(red: 0.00, green: 0.30, blue: 0.45).opacity(0.16)  // wall fill
+            let cFlr = Color(red: 0.00, green: 0.25, blue: 0.40).opacity(0.20)  // floor fill
 
-            // Bolt — right middle, dark card
-            FloatingIconCard(icon: "bolt.fill", isGreen: false)
-                .offset(x: 114, y: 14)
+            let lnTk = StrokeStyle(lineWidth: 1.0)
+            let lnMd = StrokeStyle(lineWidth: 0.70)
+            let lnTn = StrokeStyle(lineWidth: 0.50)
 
-            // Shield — bottom left, dark card
-            FloatingIconCard(icon: "shield.fill", isGreen: false)
-                .offset(x: -104, y: 70)
+            // ── Floor fill ────────────────────────────────────────────────
+            let floor = Path { q in
+                q.move(to: p(0,0)); q.addLine(to: p(W,0))
+                q.addLine(to: p(W,D)); q.addLine(to: p(0,D))
+                q.closeSubpath()
+            }
+            ctx.fill(floor, with: .color(cFlr))
+
+            // ── Outer right face  (gx = W) ────────────────────────────────
+            let faceR = Path { q in
+                q.move(to: p(W,0,0)); q.addLine(to: p(W,D,0))
+                q.addLine(to: p(W,D,1)); q.addLine(to: p(W,0,1))
+                q.closeSubpath()
+            }
+            ctx.fill(faceR, with: .color(cWal))
+            ctx.stroke(faceR, with: .color(cMid), style: lnTk)
+
+            // ── Outer front face (gy = D) ─────────────────────────────────
+            let faceF = Path { q in
+                q.move(to: p(0,D,0)); q.addLine(to: p(W,D,0))
+                q.addLine(to: p(W,D,1)); q.addLine(to: p(0,D,1))
+                q.closeSubpath()
+            }
+            ctx.fill(faceF, with: .color(cWal))
+            ctx.stroke(faceF, with: .color(cMid), style: lnTk)
+
+            // ── Interior vertical walls (constant gx) ─────────────────────
+            // gx=5: left room divider (full depth)
+            let wv1 = Path { q in
+                q.move(to: p(5,0,0)); q.addLine(to: p(5,D,0))
+                q.addLine(to: p(5,D,1)); q.addLine(to: p(5,0,1))
+                q.closeSubpath()
+            }
+            ctx.fill(wv1, with: .color(cWal.opacity(0.5)))
+            ctx.stroke(wv1, with: .color(cDim), style: lnMd)
+
+            // gx=12: right room divider (full depth)
+            let wv2 = Path { q in
+                q.move(to: p(12,0,0)); q.addLine(to: p(12,D,0))
+                q.addLine(to: p(12,D,1)); q.addLine(to: p(12,0,1))
+                q.closeSubpath()
+            }
+            ctx.fill(wv2, with: .color(cWal.opacity(0.5)))
+            ctx.stroke(wv2, with: .color(cDim), style: lnMd)
+
+            // ── Interior horizontal walls (constant gy) ───────────────────
+            // gy=4, gx: 0→5
+            let wh1 = Path { q in
+                q.move(to: p(0,4,0)); q.addLine(to: p(5,4,0))
+                q.addLine(to: p(5,4,1)); q.addLine(to: p(0,4,1))
+                q.closeSubpath()
+            }
+            ctx.fill(wh1, with: .color(cWal.opacity(0.4)))
+            ctx.stroke(wh1, with: .color(cDim), style: lnTn)
+
+            // gy=7, gx: 0→5
+            let wh2 = Path { q in
+                q.move(to: p(0,7,0)); q.addLine(to: p(5,7,0))
+                q.addLine(to: p(5,7,1)); q.addLine(to: p(0,7,1))
+                q.closeSubpath()
+            }
+            ctx.fill(wh2, with: .color(cWal.opacity(0.4)))
+            ctx.stroke(wh2, with: .color(cDim), style: lnTn)
+
+            // gy=3, gx: 5→12
+            let wh3 = Path { q in
+                q.move(to: p(5,3,0)); q.addLine(to: p(12,3,0))
+                q.addLine(to: p(12,3,1)); q.addLine(to: p(5,3,1))
+                q.closeSubpath()
+            }
+            ctx.fill(wh3, with: .color(cWal.opacity(0.4)))
+            ctx.stroke(wh3, with: .color(cDim), style: lnTn)
+
+            // gy=4, gx: 12→W
+            let wh4 = Path { q in
+                q.move(to: p(12,4,0)); q.addLine(to: p(W,4,0))
+                q.addLine(to: p(W,4,1)); q.addLine(to: p(12,4,1))
+                q.closeSubpath()
+            }
+            ctx.fill(wh4, with: .color(cWal.opacity(0.4)))
+            ctx.stroke(wh4, with: .color(cDim), style: lnTn)
+
+            // gy=7, gx: 12→W
+            let wh5 = Path { q in
+                q.move(to: p(12,7,0)); q.addLine(to: p(W,7,0))
+                q.addLine(to: p(W,7,1)); q.addLine(to: p(12,7,1))
+                q.closeSubpath()
+            }
+            ctx.fill(wh5, with: .color(cWal.opacity(0.4)))
+            ctx.stroke(wh5, with: .color(cDim), style: lnTn)
+
+            // ── Furniture (floor-level rects) ──────────────────────────────
+            func furniRect(_ x1: CGFloat,_ y1: CGFloat,_ x2: CGFloat,_ y2: CGFloat) -> Path {
+                Path { q in
+                    q.move(to: p(x1,y1)); q.addLine(to: p(x2,y1))
+                    q.addLine(to: p(x2,y2)); q.addLine(to: p(x1,y2))
+                    q.closeSubpath()
+                }
+            }
+
+            let furniture: [(CGFloat,CGFloat,CGFloat,CGFloat)] = [
+                // left rooms: 3 desks
+                (0.5, 0.5, 4.0, 2.0),
+                (0.5, 4.5, 4.0, 6.2),
+                (0.5, 7.5, 4.0, 9.2),
+                // center corridor: storage unit
+                (5.5, 0.3, 9.0, 1.6),
+                // center main: conference table
+                (5.8, 3.8, 10.5, 7.5),
+                // conference chairs top row
+                (6.2, 3.0, 7.1, 3.7),
+                (7.6, 3.0, 8.5, 3.7),
+                (9.0, 3.0, 9.9, 3.7),
+                // conference chairs bottom row
+                (6.2, 7.6, 7.1, 8.3),
+                (7.6, 7.6, 8.5, 8.3),
+                (9.0, 7.6, 9.9, 8.3),
+                // right section: shelves + cabinets
+                (12.5, 0.4, 15.5, 1.6),
+                (12.5, 4.5, 15.5, 6.5),
+                (12.5, 7.6, 15.5, 9.4),
+            ]
+
+            for (x1, y1, x2, y2) in furniture {
+                let fr = furniRect(x1, y1, x2, y2)
+                ctx.fill(fr, with: .color(cFnt))
+                ctx.stroke(fr, with: .color(cMid), style: lnTn)
+            }
+
+            // ── Floor interior wall lines (top view) ──────────────────────
+            let wallSegs: [(CGFloat,CGFloat,CGFloat,CGFloat)] = [
+                (5,0,  5,D),   (12,0, 12,D),
+                (0,4,  5,4),   (0,7,  5,7),
+                (5,3,  12,3),  (12,4, W,4),  (12,7, W,7),
+            ]
+            for (x1,y1,x2,y2) in wallSegs {
+                let ln = Path { q in q.move(to: p(x1,y1)); q.addLine(to: p(x2,y2)) }
+                ctx.stroke(ln, with: .color(cMid), style: lnMd)
+            }
+
+            // ── Outer top edge (gz = 1) ───────────────────────────────────
+            let topEdge = Path { q in
+                q.move(to: p(0,0,1)); q.addLine(to: p(W,0,1))
+                q.addLine(to: p(W,D,1)); q.addLine(to: p(0,D,1))
+                q.closeSubpath()
+            }
+            ctx.stroke(topEdge, with: .color(cHi), style: lnTk)
+
+            // ── Floor outer outline ───────────────────────────────────────
+            ctx.stroke(floor, with: .color(cHi), style: lnTk)
+
+            // ── Outer vertical corner lines ───────────────────────────────
+            for (gx, gy) in [(CGFloat(0),CGFloat(0)),(W,0),(W,D),(0,D)] {
+                let ln = Path { q in q.move(to: p(gx,gy,0)); q.addLine(to: p(gx,gy,1)) }
+                ctx.stroke(ln, with: .color(cHi), style: lnTk)
+            }
+
+            // ── Interior top lines at gz=1 ────────────────────────────────
+            for (x1,y1,x2,y2) in wallSegs {
+                let ln = Path { q in q.move(to: p(x1,y1,1)); q.addLine(to: p(x2,y2,1)) }
+                ctx.stroke(ln, with: .color(cDim), style: lnTn)
+            }
         }
     }
 }
 
 // MARK: - Floating icon card
 
-private struct FloatingIconCard: View {
+private struct IconCard: View {
     let icon: String
-    let isGreen: Bool
 
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 12)
-                .fill(isGreen ? AppTheme.green : AppTheme.cardBg2)
-                .frame(width: 44, height: 44)
+            RoundedRectangle(cornerRadius: 14)
+                .fill(AppTheme.cardBg2)
+                .frame(width: 50, height: 50)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(isGreen ? Color.clear : AppTheme.border, lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 14)
+                        .stroke(AppTheme.border, lineWidth: 1)
                 )
             Image(systemName: icon)
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundStyle(isGreen ? AppTheme.bg : AppTheme.textSec)
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundStyle(AppTheme.green)
         }
     }
 }
