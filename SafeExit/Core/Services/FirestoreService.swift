@@ -112,6 +112,54 @@ class FirestoreService {
     }
 
 
+    // —— MAP EDITOR ———————————————————————————————————————————————————————
+
+    private func nodeRef(mapID: String, nodeID: String) -> DocumentReference {
+        db.collection("mapEditor").document(mapID).collection("nodes").document(nodeID)
+    }
+    private func edgeRef(mapID: String, edgeID: String) -> DocumentReference {
+        db.collection("mapEditor").document(mapID).collection("edges").document(edgeID)
+    }
+
+    func fetchCustomNodes(mapID: String) async throws -> [CustomNode] {
+        let snap = try await db.collection("mapEditor").document(mapID)
+            .collection("nodes").getDocuments()
+        return snap.documents.compactMap { try? $0.data(as: CustomNode.self) }
+    }
+
+    func setCustomNode(_ node: CustomNode, mapID: String) async throws {
+        try nodeRef(mapID: mapID, nodeID: node.id).setData(from: node)
+    }
+
+    func deleteCustomNode(nodeID: String, mapID: String) async throws {
+        try await nodeRef(mapID: mapID, nodeID: nodeID).delete()
+    }
+
+    func fetchCustomEdges(mapID: String) async throws -> [CustomEdge] {
+        let snap = try await db.collection("mapEditor").document(mapID)
+            .collection("edges").getDocuments()
+        return snap.documents.compactMap { try? $0.data(as: CustomEdge.self) }
+    }
+
+    func setCustomEdge(_ edge: CustomEdge, mapID: String) async throws {
+        try edgeRef(mapID: mapID, edgeID: edge.id).setData(from: edge)
+    }
+
+    func deleteCustomEdge(edgeID: String, mapID: String) async throws {
+        try await edgeRef(mapID: mapID, edgeID: edgeID).delete()
+    }
+
+    func clearCustomGraph(mapID: String) async throws {
+        let nodeSnap = try await db.collection("mapEditor").document(mapID)
+            .collection("nodes").getDocuments()
+        let edgeSnap = try await db.collection("mapEditor").document(mapID)
+            .collection("edges").getDocuments()
+        let batch = db.batch()
+        nodeSnap.documents.forEach { batch.deleteDocument($0.reference) }
+        edgeSnap.documents.forEach { batch.deleteDocument($0.reference) }
+        try await batch.commit()
+    }
+
     // —— HAZARDS ——————————————————————————————————————————————————————————
 
     func reportHazard(_ hazard: Hazard) async throws {

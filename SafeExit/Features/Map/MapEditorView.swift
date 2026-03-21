@@ -21,12 +21,11 @@ struct CustomEdge: Identifiable, Codable {
 // MARK: - Editor modes
 
 enum EditorMode: CaseIterable, Equatable {
-    case addNode, addEdge, setStart, markDanger, markExit, delete
+    case addNode, setStart, markDanger, markExit, delete
 
     var label: String {
         switch self {
         case .addNode:    return "Add Node"
-        case .addEdge:    return "Add Edge"
         case .setStart:   return "I'm Here"
         case .markDanger: return "Danger"
         case .markExit:   return "Exit"
@@ -37,7 +36,6 @@ enum EditorMode: CaseIterable, Equatable {
     var icon: String {
         switch self {
         case .addNode:    return "plus.circle.fill"
-        case .addEdge:    return "line.diagonal"
         case .setStart:   return "person.fill"
         case .markDanger: return "exclamationmark.triangle.fill"
         case .markExit:   return "door.right.hand.open"
@@ -48,7 +46,6 @@ enum EditorMode: CaseIterable, Equatable {
     var color: Color {
         switch self {
         case .addNode:    return .blue
-        case .addEdge:    return .purple
         case .setStart:   return Color(red: 0.22, green: 0.96, blue: 0.29)
         case .markDanger: return Color(red: 0.90, green: 0.25, blue: 0.25)
         case .markExit:   return Color(red: 0.96, green: 0.62, blue: 0.04)
@@ -59,70 +56,114 @@ enum EditorMode: CaseIterable, Equatable {
 
 // MARK: - ViewModel
 
+enum SyncStatus {
+    case idle, syncing, synced, error(String)
+    var icon:  String { switch self { case .synced: return "checkmark.icloud.fill"
+                                      case .syncing: return "arrow.triangle.2.circlepath"
+                                      case .error:   return "exclamationmark.icloud.fill"
+                                      case .idle:    return "icloud" } }
+    var color: Color  { switch self { case .synced: return Color(red: 0.22, green: 0.96, blue: 0.29)
+                                      case .syncing: return .yellow
+                                      case .error:   return Color(red: 0.9, green: 0.25, blue: 0.25)
+                                      case .idle:    return Color(white: 0.4) } }
+}
+
 @MainActor
 final class MapEditorViewModel: ObservableObject {
     @Published var nodes:       [CustomNode] = []
-    @Published var edges:       [CustomEdge] = []
     @Published var startNodeID: String?
-    @Published var routePath:   [String]     = []   // ordered node IDs
+    @Published var routePath:   [String]     = []
+    @Published var syncStatus:  SyncStatus   = .idle
 
-    private let nodesKey = "map_editor_nodes_v1"
-    private let edgesKey = "map_editor_edges_v1"
+    // Normalised distance threshold — nodes within this distance are auto-connected
+    private let proximityThreshold: Double = 0.13
 
-    init() { load() }
+    private(set) var mapID: String = "default"
+    private let db = FirestoreService.shared
+    private let nodesKey = "map_editor_nodes_v2"
 
-    // MARK: CRUD
+    init() { loadLocal() }
+
+    // MARK: Load from Firestore
+
+    func loadFromFirestore(mapID: String) async {
+        self.mapID = mapID
+        syncStatus = .syncing
+        do {
+            let fetchedNodes = try await db.fetchCustomNodes(mapID: mapID)
+            nodes = fetchedNodes
+            saveLocal()
+            syncStatus = .synced
+        } catch {
+            loadLocal()
+            syncStatus = .error("Loaded from cache")
+        }
+        recomputeRoute()
+    }
+
+    // MARK: CRUD — each mutation saves locally + syncs to Firestore
 
     func addNode(nx: Double, ny: Double) -> String {
         let n = CustomNode(nx: nx, ny: ny, label: "N\(nodes.count + 1)")
-        nodes.append(n); save()
+        nodes.append(n)
+        saveLocal(); recomputeRoute()
+        syncNode(n)
         return n.id
-    }
-
-    func addEdge(from a: String, to b: String) {
-        guard a != b,
-              !edges.contains(where: {
-                  ($0.fromID == a && $0.toID == b) ||
-                  ($0.fromID == b && $0.toID == a)
-              })
-        else { return }
-        edges.append(CustomEdge(fromID: a, toID: b))
-        save(); recomputeRoute()
     }
 
     func toggleDangerNode(_ id: String) {
         guard let i = nodes.firstIndex(where: { $0.id == id }) else { return }
-        nodes[i].isDanger.toggle(); save(); recomputeRoute()
-    }
-
-    func toggleDangerEdge(_ id: String) {
-        guard let i = edges.firstIndex(where: { $0.id == id }) else { return }
-        edges[i].isDanger.toggle(); save(); recomputeRoute()
+        nodes[i].isDanger.toggle()
+        saveLocal(); recomputeRoute()
+        syncNode(nodes[i])
     }
 
     func toggleExit(_ id: String) {
         guard let i = nodes.firstIndex(where: { $0.id == id }) else { return }
-        nodes[i].isExit.toggle(); save(); recomputeRoute()
+        nodes[i].isExit.toggle()
+        saveLocal(); recomputeRoute()
+        syncNode(nodes[i])
     }
 
     func deleteNode(_ id: String) {
         nodes.removeAll { $0.id == id }
-        edges.removeAll { $0.fromID == id || $0.toID == id }
         if startNodeID == id { startNodeID = nil }
-        save(); recomputeRoute()
-    }
-
-    func deleteEdge(_ id: String) {
-        edges.removeAll { $0.id == id }; save(); recomputeRoute()
+        saveLocal(); recomputeRoute()
+        Task {
+            syncStatus = .syncing
+            do { try await db.deleteCustomNode(nodeID: id, mapID: mapID); syncStatus = .synced }
+            catch { syncStatus = .error(error.localizedDescription) }
+        }
     }
 
     func setStart(_ id: String) { startNodeID = id; recomputeRoute() }
 
     func clearAll() {
-        nodes = []; edges = []; startNodeID = nil; routePath = []; save()
+        let mid = mapID
+        nodes = []; startNodeID = nil; routePath = []
+        saveLocal()
+        Task {
+            syncStatus = .syncing
+            do { try await db.clearCustomGraph(mapID: mid); syncStatus = .synced }
+            catch { syncStatus = .error(error.localizedDescription) }
+        }
     }
 
-    // MARK: Pathfinding — Dijkstra with danger penalty
+    // MARK: Proximity graph builder — returns all auto-connected pairs
+
+    func proximityPairs() -> [(CustomNode, CustomNode)] {
+        var pairs: [(CustomNode, CustomNode)] = []
+        for i in 0..<nodes.count {
+            for j in (i+1)..<nodes.count {
+                let d = hypot(nodes[i].nx - nodes[j].nx, nodes[i].ny - nodes[j].ny)
+                if d <= proximityThreshold { pairs.append((nodes[i], nodes[j])) }
+            }
+        }
+        return pairs
+    }
+
+    // MARK: Pathfinding — Dijkstra on auto proximity graph
+    // Danger nodes get 10,000× weight penalty so the route avoids them when possible
 
     func recomputeRoute() {
         guard let start = startNodeID,
@@ -132,31 +173,28 @@ final class MapEditorViewModel: ObservableObject {
         let exits = nodes.filter { $0.isExit }
         guard !exits.isEmpty else { routePath = []; return }
 
-        let dangerNodeSet = Set(nodes.filter { $0.isDanger }.map { $0.id })
-        let dangerEdgeSet = Set(edges.filter { $0.isDanger }.map { $0.id })
+        let dangerSet = Set(nodes.filter { $0.isDanger }.map { $0.id })
 
         var adj: [String: [(String, Double)]] = [:]
         for n in nodes { adj[n.id] = [] }
-        for edge in edges {
-            guard let fn = nodes.first(where: { $0.id == edge.fromID }),
-                  let tn = nodes.first(where: { $0.id == edge.toID })
-            else { continue }
-            let dist = hypot(fn.nx - tn.nx, fn.ny - tn.ny)
-            let danger = dangerEdgeSet.contains(edge.id)
-                      || dangerNodeSet.contains(fn.id)
-                      || dangerNodeSet.contains(tn.id)
-            let w = dist * (danger ? 10_000.0 : 1.0)
-            adj[fn.id]?.append((tn.id, w))
-            adj[tn.id]?.append((fn.id, w))
+
+        for i in 0..<nodes.count {
+            for j in (i+1)..<nodes.count {
+                let ni = nodes[i], nj = nodes[j]
+                let dist = hypot(ni.nx - nj.nx, ni.ny - nj.ny)
+                guard dist <= proximityThreshold else { continue }
+                let danger = dangerSet.contains(ni.id) || dangerSet.contains(nj.id)
+                let w = dist * (danger ? 10_000.0 : 1.0)
+                adj[ni.id]?.append((nj.id, w))
+                adj[nj.id]?.append((ni.id, w))
+            }
         }
 
         var best: [String] = []
         var bestCost = Double.infinity
         for exit in exits {
             if let (cost, path) = dijkstra(from: start, to: exit.id, adj: adj),
-               cost < bestCost {
-                bestCost = cost; best = path
-            }
+               cost < bestCost { bestCost = cost; best = path }
         }
         routePath = best
     }
@@ -173,19 +211,15 @@ final class MapEditorViewModel: ObservableObject {
             let (u, d) = queue.removeFirst()
             guard !visited.contains(u) else { continue }
             visited.insert(u)
-
             if u == dst {
-                var path: [String] = []
-                var cur: String? = dst
+                var path: [String] = []; var cur: String? = dst
                 while let c = cur { path.append(c); cur = prev[c] }
                 return (d, path.reversed())
             }
-
             for (v, w) in adj[u] ?? [] {
                 let alt = d + w
                 if alt < (dist[v] ?? .infinity) {
-                    dist[v] = alt; prev[v] = u
-                    queue.append((v, alt))
+                    dist[v] = alt; prev[v] = u; queue.append((v, alt))
                 }
             }
         }
@@ -200,68 +234,32 @@ final class MapEditorViewModel: ObservableObject {
         return c
     }
 
-    func nearestEdge(to pt: CGPoint, in sz: CGSize, threshold: CGFloat = 14) -> CustomEdge? {
-        let map = nodeDict()
-        guard let c = edges.min(by: { edgeDist($0, pt, sz, map) < edgeDist($1, pt, sz, map) }),
-              edgeDist(c, pt, sz, map) <= threshold else { return nil }
-        return c
-    }
-
     func canvasPoint(_ n: CustomNode, in sz: CGSize) -> CGPoint {
         CGPoint(x: CGFloat(n.nx) * sz.width, y: CGFloat(n.ny) * sz.height)
     }
 
-    // MARK: Helpers
+    // MARK: Private helpers
 
-    func nodeDict() -> [String: CustomNode] {
-        Dictionary(uniqueKeysWithValues: nodes.map { ($0.id, $0) })
-    }
-
-    func routeEdgeIDs() -> Set<String> {
-        var result = Set<String>()
-        let ids = routePath
-        for i in 0 ..< max(0, ids.count - 1) {
-            for e in edges where
-                (e.fromID == ids[i] && e.toID == ids[i+1]) ||
-                (e.fromID == ids[i+1] && e.toID == ids[i]) {
-                result.insert(e.id)
-            }
+    private func syncNode(_ node: CustomNode) {
+        let mid = mapID
+        Task {
+            syncStatus = .syncing
+            do { try await db.setCustomNode(node, mapID: mid); syncStatus = .synced }
+            catch { syncStatus = .error(error.localizedDescription) }
         }
-        return result
     }
 
     private func nodeDist(_ n: CustomNode, _ pt: CGPoint, _ sz: CGSize) -> CGFloat {
         hypot(CGFloat(n.nx) * sz.width - pt.x, CGFloat(n.ny) * sz.height - pt.y)
     }
 
-    private func edgeDist(_ e: CustomEdge, _ pt: CGPoint, _ sz: CGSize,
-                           _ map: [String: CustomNode]) -> CGFloat {
-        guard let fn = map[e.fromID], let tn = map[e.toID] else { return .infinity }
-        let a = CGPoint(x: fn.nx * sz.width,  y: fn.ny * sz.height)
-        let b = CGPoint(x: tn.nx * sz.width,  y: tn.ny * sz.height)
-        return ptSegDist(pt, a, b)
-    }
-
-    private func ptSegDist(_ p: CGPoint, _ a: CGPoint, _ b: CGPoint) -> CGFloat {
-        let dx = b.x - a.x, dy = b.y - a.y
-        let lenSq = dx*dx + dy*dy
-        guard lenSq > 0 else { return hypot(p.x - a.x, p.y - a.y) }
-        let t = max(0, min(1, ((p.x - a.x)*dx + (p.y - a.y)*dy) / lenSq))
-        return hypot(p.x - a.x - t*dx, p.y - a.y - t*dy)
-    }
-
-    // MARK: Persistence
-
-    private func save() {
+    private func saveLocal() {
         if let d = try? JSONEncoder().encode(nodes) { UserDefaults.standard.set(d, forKey: nodesKey) }
-        if let d = try? JSONEncoder().encode(edges) { UserDefaults.standard.set(d, forKey: edgesKey) }
     }
 
-    private func load() {
+    private func loadLocal() {
         if let d = UserDefaults.standard.data(forKey: nodesKey),
            let n = try? JSONDecoder().decode([CustomNode].self, from: d) { nodes = n }
-        if let d = UserDefaults.standard.data(forKey: edgesKey),
-           let e = try? JSONDecoder().decode([CustomEdge].self, from: d) { edges = e }
     }
 }
 
@@ -271,9 +269,8 @@ struct MapEditorView: View {
     @EnvironmentObject private var floorPlanVM: FloorPlanLibraryViewModel
     @StateObject private var vm = MapEditorViewModel()
 
-    @State private var mode:            EditorMode = .addNode
-    @State private var pendingNodeID:   String?        // first node picked in addEdge mode
-    @State private var showClear =      false
+    @State private var mode:      EditorMode = .addNode
+    @State private var showClear  = false
 
     var body: some View {
         ZStack {
@@ -300,10 +297,10 @@ struct MapEditorView: View {
                         // Graph drawing canvas
                         Canvas { ctx, sz in
                             drawGraph(ctx: &ctx, size: sz,
-                                      nodes: vm.nodes, edges: vm.edges,
+                                      nodes: vm.nodes,
+                                      proximityPairs: vm.proximityPairs(),
                                       routePath: vm.routePath,
-                                      startID: vm.startNodeID,
-                                      pendingID: pendingNodeID)
+                                      startID: vm.startNodeID)
                         }
                         .allowsHitTesting(false)
 
@@ -340,9 +337,16 @@ struct MapEditorView: View {
                 modeToolbar
             }
         }
-        .confirmationDialog("Clear all nodes and edges?",
+        .task {
+            let mapID = floorPlanVM.activeMapID ?? "default"
+            await vm.loadFromFirestore(mapID: mapID)
+        }
+        .onChange(of: floorPlanVM.activeMapID) { newID in
+            Task { await vm.loadFromFirestore(mapID: newID ?? "default") }
+        }
+        .confirmationDialog("Clear all nodes?",
                             isPresented: $showClear, titleVisibility: .visible) {
-            Button("Clear All", role: .destructive) { vm.clearAll(); pendingNodeID = nil }
+            Button("Clear All", role: .destructive) { vm.clearAll() }
             Button("Cancel", role: .cancel) {}
         }
     }
@@ -365,10 +369,16 @@ struct MapEditorView: View {
 
             Spacer()
 
-            Text("\(vm.nodes.count) nodes · \(vm.edges.count) edges")
+            // Sync status
+            Image(systemName: vm.syncStatus.icon)
+                .font(.system(size: 14))
+                .foregroundStyle(vm.syncStatus.color)
+
+            Text("\(vm.nodes.count) nodes")
                 .font(.system(size: 11, weight: .medium, design: .monospaced))
                 .foregroundStyle(AppTheme.textDim)
 
+            // Clear everything
             Button { showClear = true } label: {
                 Image(systemName: "trash")
                     .font(.system(size: 14))
@@ -433,14 +443,11 @@ struct MapEditorView: View {
     private var hintBar: some View {
         let hint: String = {
             switch mode {
-            case .addNode:    return "Tap empty space to place a node"
-            case .addEdge:    return pendingNodeID == nil
-                                   ? "Tap a node to start an edge"
-                                   : "Tap another node to connect — tap same to cancel"
-            case .setStart:   return "Tap a node to set your location"
-            case .markDanger: return "Tap a node or edge to toggle danger"
+            case .addNode:    return "Tap empty space to place a node — nearby nodes auto-connect"
+            case .setStart:   return "Tap a node to set your current location"
+            case .markDanger: return "Tap a node to toggle danger — route will avoid it"
             case .markExit:   return "Tap a node to mark it as a safe exit (amber)"
-            case .delete:     return "Tap a node or edge to delete it"
+            case .delete:     return "Tap a node to delete it"
             }
         }()
 
@@ -465,10 +472,7 @@ struct MapEditorView: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
                 ForEach(EditorMode.allCases, id: \.label) { m in
-                    Button {
-                        mode = m
-                        if m != .addEdge { pendingNodeID = nil }
-                    } label: {
+                    Button { mode = m } label: {
                         VStack(spacing: 4) {
                             Image(systemName: m.icon)
                                 .font(.system(size: 18, weight: .semibold))
@@ -503,77 +507,64 @@ struct MapEditorView: View {
                                ny: Double(pt.y / size.height))
             }
 
-        case .addEdge:
-            guard let node = vm.nearestNode(to: pt, in: size) else { return }
-            if let first = pendingNodeID {
-                if first == node.id {
-                    pendingNodeID = nil         // tapped same node → cancel
-                } else {
-                    vm.addEdge(from: first, to: node.id)
-                    pendingNodeID = nil
-                }
-            } else {
-                pendingNodeID = node.id
-            }
-
         case .setStart:
             if let node = vm.nearestNode(to: pt, in: size) { vm.setStart(node.id) }
 
         case .markDanger:
-            if let node = vm.nearestNode(to: pt, in: size) {
-                vm.toggleDangerNode(node.id)
-            } else if let edge = vm.nearestEdge(to: pt, in: size) {
-                vm.toggleDangerEdge(edge.id)
-            }
+            if let node = vm.nearestNode(to: pt, in: size) { vm.toggleDangerNode(node.id) }
 
         case .markExit:
             if let node = vm.nearestNode(to: pt, in: size) { vm.toggleExit(node.id) }
 
         case .delete:
-            if let node = vm.nearestNode(to: pt, in: size) {
-                vm.deleteNode(node.id)
-                if pendingNodeID == node.id { pendingNodeID = nil }
-            } else if let edge = vm.nearestEdge(to: pt, in: size) {
-                vm.deleteEdge(edge.id)
-            }
+            if let node = vm.nearestNode(to: pt, in: size) { vm.deleteNode(node.id) }
         }
     }
 
-    // MARK: Canvas drawing (pure function — captures only value types)
+    // MARK: Canvas drawing
 
     private func drawGraph(ctx: inout GraphicsContext, size: CGSize,
-                           nodes: [CustomNode], edges: [CustomEdge],
-                           routePath: [String], startID: String?,
-                           pendingID: String?) {
-        let nodeMap     = Dictionary(uniqueKeysWithValues: nodes.map { ($0.id, $0) })
-        let routeEdges  = routeEdgeSet(routePath: routePath, edges: edges)
-        let routeNodes  = Set(routePath)
+                           nodes: [CustomNode],
+                           proximityPairs: [(CustomNode, CustomNode)],
+                           routePath: [String],
+                           startID: String?) {
+        let nodeMap    = Dictionary(uniqueKeysWithValues: nodes.map { ($0.id, $0) })
+        let routeNodes = Set(routePath)
 
-        let green  = Color(red: 0.22, green: 0.96, blue: 0.29)
-        let red    = Color(red: 0.90, green: 0.25, blue: 0.25)
-        let amber  = Color(red: 0.96, green: 0.62, blue: 0.04)
+        let green = Color(red: 0.22, green: 0.96, blue: 0.29)
+        let red   = Color(red: 0.90, green: 0.25, blue: 0.25)
+        let amber = Color(red: 0.96, green: 0.62, blue: 0.04)
 
-        // 1 — Draw edges
-        for edge in edges {
-            guard let fn = nodeMap[edge.fromID], let tn = nodeMap[edge.toID] else { continue }
-            let a = pt(fn, size); let b = pt(tn, size)
-            var line = Path(); line.move(to: a); line.addLine(to: b)
+        // Build route segment set for O(1) lookup: "id1|id2" (sorted)
+        var routeSegments = Set<String>()
+        for i in 0..<max(0, routePath.count - 1) {
+            let a = routePath[i], b = routePath[i+1]
+            routeSegments.insert([a, b].sorted().joined(separator: "|"))
+        }
 
-            if routeEdges.contains(edge.id) {
+        // 1 — Draw proximity connections
+        for (ni, nj) in proximityPairs {
+            let a = pt(ni, size), b = pt(nj, size)
+            let key = [ni.id, nj.id].sorted().joined(separator: "|")
+            let isRoute = routeSegments.contains(key)
+
+            var line = Path()
+            line.move(to: a)
+            line.addLine(to: b)
+
+            if isRoute {
                 ctx.stroke(line, with: .color(green),
-                           style: StrokeStyle(lineWidth: 3, lineCap: .round))
-            } else if edge.isDanger {
-                ctx.stroke(line, with: .color(red),
-                           style: StrokeStyle(lineWidth: 2, lineCap: .round, dash: [6, 4]))
+                           style: StrokeStyle(lineWidth: 4, lineCap: .round))
             } else {
-                ctx.stroke(line, with: .color(Color(white: 0.35)),
+                // Faint gray — shows the auto-graph to the user
+                ctx.stroke(line, with: .color(Color(white: 0.30)),
                            style: StrokeStyle(lineWidth: 1.5, lineCap: .round))
             }
         }
 
         // 2 — Draw route direction arrows
         if routePath.count >= 2 {
-            for i in 0 ..< routePath.count - 1 {
+            for i in 0..<routePath.count - 1 {
                 guard let fn = nodeMap[routePath[i]],
                       let tn = nodeMap[routePath[i+1]] else { continue }
                 drawArrow(ctx: &ctx, from: pt(fn, size), to: pt(tn, size), color: green)
@@ -584,18 +575,15 @@ struct MapEditorView: View {
         for node in nodes {
             let center = pt(node, size)
             let r: CGFloat = 10
-            let isStart    = node.id == startID
-            let isSelected = node.id == pendingID
-            let onRoute    = routeNodes.contains(node.id)
+            let isStart = node.id == startID
+            let onRoute = routeNodes.contains(node.id)
 
             if isStart {
-                // Bright green filled circle
                 let circ = Path(ellipseIn: CGRect(x: center.x - r, y: center.y - r,
                                                    width: r*2, height: r*2))
                 ctx.fill(circ, with: .color(green))
                 ctx.stroke(circ, with: .color(.white), lineWidth: 1.5)
 
-                // Outer pulse
                 let pr: CGFloat = 16
                 let pulse = Path(ellipseIn: CGRect(x: center.x - pr, y: center.y - pr,
                                                     width: pr*2, height: pr*2))
@@ -607,10 +595,9 @@ struct MapEditorView: View {
                 ctx.draw(lbl, at: CGPoint(x: center.x, y: center.y - r - 9))
 
             } else if node.isExit {
-                // Amber diamond
                 let s: CGFloat = 11
                 var diamond = Path()
-                diamond.move(to: CGPoint(x: center.x,     y: center.y - s))
+                diamond.move(to: CGPoint(x: center.x,       y: center.y - s))
                 diamond.addLine(to: CGPoint(x: center.x + s, y: center.y))
                 diamond.addLine(to: CGPoint(x: center.x,     y: center.y + s))
                 diamond.addLine(to: CGPoint(x: center.x - s, y: center.y))
@@ -624,7 +611,6 @@ struct MapEditorView: View {
                 ctx.draw(lbl, at: CGPoint(x: center.x, y: center.y + s + 9))
 
             } else if node.isDanger {
-                // Red circle + dashed ring
                 let circ = Path(ellipseIn: CGRect(x: center.x - r, y: center.y - r,
                                                    width: r*2, height: r*2))
                 ctx.fill(circ, with: .color(red.opacity(0.18)))
@@ -641,22 +627,12 @@ struct MapEditorView: View {
                 ctx.draw(lbl, at: CGPoint(x: center.x, y: center.y - r - 10))
 
             } else {
-                // Regular node
                 let circ = Path(ellipseIn: CGRect(x: center.x - r, y: center.y - r,
                                                    width: r*2, height: r*2))
                 ctx.fill(circ, with: .color(Color(white: 0.18)))
                 ctx.stroke(circ,
                            with: .color(onRoute ? green : Color(white: 0.42)),
                            lineWidth: onRoute ? 2 : 1.5)
-            }
-
-            // Blue dashed ring — node is selected as edge start
-            if isSelected {
-                let sr: CGFloat = 17
-                let ring = Path(ellipseIn: CGRect(x: center.x - sr, y: center.y - sr,
-                                                   width: sr*2, height: sr*2))
-                ctx.stroke(ring, with: .color(.blue),
-                           style: StrokeStyle(lineWidth: 2, dash: [5, 3]))
             }
 
             // Node label
@@ -669,7 +645,7 @@ struct MapEditorView: View {
         }
     }
 
-    // Arrow head at the midpoint of a segment
+    // Arrow head at midpoint of a segment
     private func drawArrow(ctx: inout GraphicsContext,
                            from a: CGPoint, to b: CGPoint, color: Color) {
         let mid   = CGPoint(x: (a.x + b.x) / 2, y: (a.y + b.y) / 2)
@@ -687,18 +663,6 @@ struct MapEditorView: View {
 
     private func pt(_ n: CustomNode, _ sz: CGSize) -> CGPoint {
         CGPoint(x: CGFloat(n.nx) * sz.width, y: CGFloat(n.ny) * sz.height)
-    }
-
-    private func routeEdgeSet(routePath: [String], edges: [CustomEdge]) -> Set<String> {
-        var result = Set<String>()
-        for i in 0 ..< max(0, routePath.count - 1) {
-            for e in edges where
-                (e.fromID == routePath[i] && e.toID == routePath[i+1]) ||
-                (e.fromID == routePath[i+1] && e.toID == routePath[i]) {
-                result.insert(e.id)
-            }
-        }
-        return result
     }
 }
 
