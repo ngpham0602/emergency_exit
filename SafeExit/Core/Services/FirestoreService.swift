@@ -7,7 +7,7 @@ import FirebaseFirestore
 class FirestoreService {
 
     static let shared = FirestoreService()
-    private let db = Firestore.firestore()
+    private lazy var db = Firestore.firestore()
     private init() {}
 
 

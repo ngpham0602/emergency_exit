@@ -1,5 +1,5 @@
 import SwiftUI
-import FireBase
+import Firebase
 
 @main
 struct SafeExitApp: App {
@@ -12,14 +12,7 @@ struct SafeExitApp: App {
 
     var body: some Scene {
         WindowGroup {
-            if authViewModel.isSignedIn {
-                MainTabView()
-                    .environmentObject(appViewModel)
-                    .environmentObject(authViewModel)
-            } else {
-                LandingView()
-                    .environmentObject(authViewModel)
-            }
+            FirebaseTestView() 
         }
     }
 }
