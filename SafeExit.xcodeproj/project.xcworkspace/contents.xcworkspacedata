@@ -4,19 +4,4 @@
    <FileRef
       location = "self:">
    </FileRef>
-   <FileRef
-      location = "group:NotificationManager.swift">
-   </FileRef>
-   <FileRef
-      location = "group:NotificationExampleView.swift">
-   </FileRef>
-   <FileRef
-      location = "group:AppDelegate.swift">
-   </FileRef>
-   <FileRef
-      location = "group:SafeExitApp_Example.swift">
-   </FileRef>
-   <FileRef
-      location = "group:NOTIFICATION_SETUP_GUIDE.md">
-   </FileRef>
 </Workspace>
