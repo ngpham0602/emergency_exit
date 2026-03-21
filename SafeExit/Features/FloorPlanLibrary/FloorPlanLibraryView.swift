@@ -405,9 +405,9 @@ struct FloorPlanLibraryView: View {
                                     .foregroundStyle(AppTheme.textDim)
                             )
                         }
-                        .onChange(of: photoItem) { item in
+                        .onChange(of: photoItem) { oldValue, newValue in
                             Task {
-                                if let data = try? await item?.loadTransferable(type: Data.self),
+                                if let data = try? await newValue?.loadTransferable(type: Data.self),
                                    let img = UIImage(data: data) {
                                     pendingImage = img
                                     newMapName = ""
