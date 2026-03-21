@@ -1,5 +1,6 @@
 import SwiftUI
-import Firebase
+import FireBase
+
 
 @main
 struct SafeExitApp: App {
