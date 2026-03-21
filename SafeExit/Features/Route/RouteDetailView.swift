@@ -86,7 +86,7 @@ struct RouteDetailView: View {
                                         Circle()
                                             .fill(AppTheme.green)
                                             .frame(width: 6, height: 6)
-                                        Text("Recalculated \(timeAgoString())")
+                                        Text("ETA \(timeAgoString())")
                                             .font(.system(size: 10))
                                             .foregroundStyle(AppTheme.green)
                                     }
@@ -259,7 +259,9 @@ struct RouteDetailView: View {
                         time: estimatedTotalTime(distance: route.totalDistance * 1.4),
                         isActive: false
                     )
-                    AltPathCard(label: "CAMPUS EXIT", safePercent: 72, time: "12:30", isActive: false)
+                    AltPathCard(label: "CAMPUS EXIT", safePercent: 72,
+                               time: estimatedTotalTime(distance: route.totalDistance * 1.8),
+                               isActive: false)
                 }
             }
         }
@@ -323,7 +325,12 @@ struct RouteDetailView: View {
         return String(format: "%d:%02d", m, s)
     }
 
-    private func timeAgoString() -> String { "2m ago" }
+    private func timeAgoString() -> String {
+        guard let route = viewModel.routeResult else { return "N/A" }
+        let seconds = Int(route.totalDistance / 1.2)
+        let m = seconds / 60, s = seconds % 60
+        return String(format: "%d:%02d", m, s)
+    }
 }
 
 private struct AltPathCard: View {

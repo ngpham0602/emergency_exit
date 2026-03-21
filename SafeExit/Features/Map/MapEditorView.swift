@@ -435,7 +435,7 @@ struct MapEditorView: View {
             let mapID = floorPlanVM.activeMapID ?? "default"
             await vm.loadFromFirestore(mapID: mapID)
         }
-        .onChange(of: floorPlanVM.activeMapID) { newID in
+        .onChange(of: floorPlanVM.activeMapID) { _, newID in
             // Reset zoom & pan when switching maps
             withAnimation(.easeOut(duration: 0.25)) {
                 scale = 1.0; lastScale = 1.0

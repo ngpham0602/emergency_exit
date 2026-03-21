@@ -8,7 +8,6 @@ struct ProfileView: View {
     @State private var biometricLock      = false
     @State private var showSignOutConfirm = false
     @State private var showFirebaseTest   = false
-    @State private var showSendEmergency  = false
 
     private let safetyContacts: [SafetyContact] = [
         SafetyContact(name: "Emergency Response", role: "Security",       icon: "shield.fill"),
@@ -108,22 +107,21 @@ struct ProfileView: View {
                                     .foregroundStyle(AppTheme.textSec)
                                     .padding(.horizontal, 2)
 
-                                Button { showSendEmergency = true } label: {
-                                    HStack(spacing: 10) {
-                                        Image(systemName: "megaphone.fill")
-                                            .font(.system(size: 16))
-                                        Text("Send Emergency Code")
-                                            .font(.system(size: 15, weight: .bold))
-                                    }
-                                    .foregroundStyle(.white)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 16)
-                                    .background(AppTheme.red)
-                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                            Button {} label: {
+                                HStack(spacing: 10) {
+                                    Image(systemName: "shield.fill")
+                                        .font(.system(size: 16))
+                                    Text("Send Emergency Code")
+                                        .font(.system(size: 15, weight: .bold))
                                 }
+                                .foregroundStyle(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 16)
+                                .background(AppTheme.red)
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
                             }
-                            .darkCard()
                         }
+                        .darkCard()
 
                         // Safety contacts
                         VStack(alignment: .leading, spacing: 12) {
@@ -261,7 +259,7 @@ struct ProfileView: View {
                             HStack {
                                 Image(systemName: "rectangle.portrait.and.arrow.right")
                                     .font(.system(size: 16))
-                                Text("Sign Out of SafeExit")
+                                Text("Sign Out")
                                     .font(.system(size: 15, weight: .semibold))
                                 Spacer()
                                 Image(systemName: "chevron.right")
@@ -275,7 +273,7 @@ struct ProfileView: View {
                             .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppTheme.border, lineWidth: 1))
                         }
 
-                        Text("SAFEEXIT · BUILD 2401")
+                        Text("SAFEROUTE · v\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")")
                             .font(.system(size: 10, weight: .medium, design: .monospaced))
                             .foregroundStyle(AppTheme.textDim)
                             .padding(.bottom, 8)

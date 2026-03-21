@@ -111,9 +111,36 @@ struct EmergencyActiveView: View {
 
                     // Quick action grid
                     HStack(spacing: 12) {
-                        QuickActionButton(icon: "location.fill",  title: "Share\nLocation",   sub: "Live GPS\nTracking")
-                        QuickActionButton(icon: "phone.fill",     title: "Call\nSecurity",    sub: "Direct\nResponse")
-                        QuickActionButton(icon: "mappin.circle",  title: "Safe Zone",         sub: "0.4mi Nearby")
+                        Button {
+                            // Share location via system share sheet
+                            if let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                               let window = scene.windows.first,
+                               let root = window.rootViewController {
+                                let text = "EMERGENCY: I need help at my current location."
+                                let ac = UIActivityViewController(activityItems: [text], applicationActivities: nil)
+                                root.present(ac, animated: true)
+                            }
+                        } label: {
+                            QuickActionContent(icon: "location.fill", title: "Share\nLocation", sub: "Broadcast\nPosition")
+                        }
+
+                        Button {
+                            // Call emergency services
+                            if let url = URL(string: "tel://000") {
+                                UIApplication.shared.open(url)
+                            }
+                        } label: {
+                            QuickActionContent(icon: "phone.fill", title: "Call\nEmergency", sub: "Direct\nLine")
+                        }
+
+                        Button {
+                            // Open Maps to find nearby safe zones
+                            if let url = URL(string: "maps://?q=hospital") {
+                                UIApplication.shared.open(url)
+                            }
+                        } label: {
+                            QuickActionContent(icon: "mappin.circle", title: "Safe Zone", sub: "Find\nNearby")
+                        }
                     }
                     .padding(.horizontal, 20)
                     .padding(.bottom, 32)
@@ -196,7 +223,7 @@ struct EmergencyActiveView: View {
     }
 }
 
-private struct QuickActionButton: View {
+private struct QuickActionContent: View {
     let icon: String
     let title: String
     let sub: String

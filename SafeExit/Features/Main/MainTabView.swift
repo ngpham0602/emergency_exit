@@ -168,85 +168,8 @@ struct MainTabView: View {
         .fullScreenCover(isPresented: $showEmergency) {
             EmergencyActiveView().environmentObject(viewModel)
         }
-        .fullScreenCover(isPresented: $viewModel.showEmergencyAlert) {
-            if let alert = viewModel.activeEmergencyAlert {
-                EmployeeEmergencyAlertView(alert: alert) {
-                    let routeTabIndex = isSecurity ? 3 : 1
-                    selectedTab = routeTabIndex
-                    viewModel.recomputeRoute()
-                }
-                .environmentObject(viewModel)
-            }
-        }
-        // Auto-dismiss the fullScreenCover when alert is cleared (security stopped it)
-        .onChange(of: viewModel.activeEmergencyAlert?.id) { newID in
-            if newID == nil {
-                viewModel.showEmergencyAlert = false
-            }
-        }
-        .sheet(isPresented: $showSendEmergency) {
-            SendEmergencyView()
-                .environmentObject(viewModel)
-                .environmentObject(authVM)
-                .presentationBackground(AppTheme.bg)
-        }
-        .onAppear {
-            viewModel.recomputeRoute()
-            viewModel.startListeningForEmergencyAlerts()
-            viewModel.startListeningForReportedHazards()
-        }
-        .confirmationDialog(
-            "Stop Emergency Alert",
-            isPresented: $confirmStopAlert,
-            titleVisibility: .visible
-        ) {
-            Button("Stop Alert", role: .destructive) {
-                viewModel.stopEmergencyAlert()
-            }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("This will deactivate the emergency alert for all employees and send an ALL CLEAR notification.")
-        }
-        .confirmationDialog(
-            "Clear All Hazards",
-            isPresented: $confirmStopHazard,
-            titleVisibility: .visible
-        ) {
-            Button("Clear All Hazards", role: .destructive) {
-                viewModel.stopAllHazards()
-            }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("This will clear all reported hazards and return the app to normal for all users.")
-        }
+        .onAppear { viewModel.recomputeRoute() }
         .onChange(of: authVM.userRole) { _ in selectedTab = 0 }
-        .onChange(of: viewModel.shouldNavigateToMap) { navigate in
-            if navigate {
-                let routeTabIndex = isSecurity ? 3 : 1
-                selectedTab = routeTabIndex
-                viewModel.shouldNavigateToMap = false
-                viewModel.recomputeRoute()
-            }
-        }
-    }
-
-    // MARK: - Send emergency (security only)
-
-    var sendEmergencyButton: some View {
-        Button { showSendEmergency = true } label: {
-            HStack(spacing: 8) {
-                Image(systemName: "megaphone.fill")
-                    .font(.system(size: 14))
-                Text("SEND ALERT")
-                    .font(.system(size: 12, weight: .black))
-                    .tracking(0.5)
-            }
-            .foregroundStyle(.white)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .background(AppTheme.red)
-            .clipShape(Capsule())
-        }
     }
 
     // MARK: - Role-specific content

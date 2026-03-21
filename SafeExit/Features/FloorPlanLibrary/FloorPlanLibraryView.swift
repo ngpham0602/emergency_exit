@@ -323,11 +323,7 @@ final class FloorPlanLibraryViewModel: ObservableObject {
 struct FloorPlanLibraryView: View {
     @EnvironmentObject private var vm: FloorPlanLibraryViewModel
 
-    @State private var photoItem: PhotosPickerItem?
-    @State private var pendingImage: UIImage?
-    @State private var showAddSheet = false
-    @State private var newMapName = ""
-    @State private var newFloorLabel = ""
+    @State private var showImportSheet = false
     @State private var entryToDelete: FloorPlanEntry?
 
     var body: some View {
@@ -379,45 +375,22 @@ struct FloorPlanLibraryView: View {
 
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 12) {
-                        // Import new map card
-                        PhotosPicker(selection: $photoItem, matching: .images) {
-                            HStack(spacing: 14) {
-                                ZStack {
-                                    Circle()
-                                        .fill(AppTheme.greenDim)
-                                        .frame(width: 40, height: 40)
-                                    Image(systemName: "plus")
-                                        .font(.system(size: 20, weight: .bold))
-                                        .foregroundStyle(AppTheme.green)
-                                }
-                                Text("Import New Map")
-                                    .font(.system(size: 16, weight: .semibold))
-                                    .foregroundStyle(AppTheme.textPri)
-                                Spacer()
-                            }
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 18)
-                            .background(AppTheme.cardBg)
-                            .clipShape(RoundedRectangle(cornerRadius: 14))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 14)
-                                    .stroke(style: StrokeStyle(lineWidth: 1.5, dash: [6, 4]))
+                        if vm.filtered.isEmpty {
+                            VStack(spacing: 12) {
+                                Image(systemName: "map")
+                                    .font(.system(size: 36))
                                     .foregroundStyle(AppTheme.textDim)
-                            )
-                        }
-                        .onChange(of: photoItem) { oldValue, newValue in
-                            Task {
-                                if let data = try? await newValue?.loadTransferable(type: Data.self),
-                                   let img = UIImage(data: data) {
-                                    pendingImage = img
-                                    newMapName = ""
-                                    newFloorLabel = ""
-                                    showAddSheet = true
-                                }
+                                Text("No floor plans yet")
+                                    .font(.system(size: 15, weight: .semibold))
+                                    .foregroundStyle(AppTheme.textSec)
+                                Text("Tap + to import your first map")
+                                    .font(.system(size: 13))
+                                    .foregroundStyle(AppTheme.textDim)
                             }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 60)
                         }
 
-                        // Map cards
                         ForEach(vm.filtered) { entry in
                             MapCard(entry: entry, vm: vm, onDelete: { entryToDelete = entry })
                         }
@@ -427,8 +400,8 @@ struct FloorPlanLibraryView: View {
                 }
             }
 
-            // FAB
-            PhotosPicker(selection: $photoItem, matching: .images) {
+            // FAB — opens Import Floorplan sheet
+            Button { showImportSheet = true } label: {
                 ZStack {
                     Circle()
                         .fill(AppTheme.green)
@@ -442,20 +415,9 @@ struct FloorPlanLibraryView: View {
             .padding(.trailing, 20)
             .padding(.bottom, 28)
         }
-        .sheet(isPresented: $showAddSheet) {
-            AddMapSheet(name: $newMapName, floorLabel: $newFloorLabel) {
-                if let img = pendingImage, !newMapName.isEmpty {
-                    vm.add(
-                        name: newMapName,
-                        floorLabel: newFloorLabel.isEmpty ? "FL" : newFloorLabel,
-                        image: img
-                    )
-                }
-                pendingImage = nil
-            }
-            .presentationDetents([.height(340)])
-            .presentationBackground(AppTheme.cardBg)
-            .presentationDragIndicator(.visible)
+        .sheet(isPresented: $showImportSheet) {
+            ImportFloorplanSheet(vm: vm)
+                .presentationBackground(AppTheme.bg)
         }
         .confirmationDialog(
             "Delete \"\(entryToDelete?.name ?? "")\"?",
@@ -597,80 +559,373 @@ private struct MapCard: View {
     }
 }
 
-// MARK: - Add map sheet
+// MARK: - Import Floorplan Sheet
 
-private struct AddMapSheet: View {
-    @Binding var name: String
-    @Binding var floorLabel: String
+private enum ImportSource: CaseIterable {
+    case cloud, localFile, cameraScan
+
+    var label: String {
+        switch self {
+        case .cloud:      return "Cloud"
+        case .localFile:  return "Local File"
+        case .cameraScan: return "Camera Scan"
+        }
+    }
+    var sub: String {
+        switch self {
+        case .cloud:      return "Drive / Dropbox"
+        case .localFile:  return "PDF / High-res JPG"
+        case .cameraScan: return "Instant scan of printed architectural blueprints"
+        }
+    }
+    var icon: String {
+        switch self {
+        case .cloud:      return "cloud"
+        case .localFile:  return "doc.badge.arrow.up"
+        case .cameraScan: return "camera"
+        }
+    }
+    var isWide: Bool { self == .cameraScan }
+}
+
+private struct ImportFloorplanSheet: View {
+    @ObservedObject var vm: FloorPlanLibraryViewModel
     @Environment(\.dismiss) private var dismiss
-    let onSave: () -> Void
+
+    @State private var selectedSource: ImportSource = .localFile
+    @State private var buildingName = ""
+    @State private var floorNumber  = ""
+    @State private var photoItem: PhotosPickerItem?
+    @State private var pendingImage: UIImage?
+    @State private var isUploading  = false
+
+    private var canUpload: Bool {
+        pendingImage != nil && !buildingName.isEmpty
+    }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                Text("Name Your Map")
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundStyle(AppTheme.textPri)
-                Spacer()
-                Button { dismiss() } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 22))
-                        .foregroundStyle(AppTheme.textDim)
-                }
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 24)
-            .padding(.bottom, 20)
+        ZStack {
+            AppTheme.bg.ignoresSafeArea()
 
-            VStack(spacing: 14) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("MAP NAME")
-                        .font(.system(size: 10, weight: .bold, design: .monospaced))
-                        .tracking(2)
-                        .foregroundStyle(AppTheme.textSec)
-                    TextField("e.g. Main Terminal", text: $name)
-                        .font(.system(size: 15))
+            VStack(spacing: 0) {
+                // Header
+                HStack {
+                    Button { dismiss() } label: {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(AppTheme.textSec)
+                    }
+                    Text("Import Floorplan")
+                        .font(.system(size: 18, weight: .bold))
                         .foregroundStyle(AppTheme.textPri)
-                        .tint(AppTheme.green)
-                        .padding(12)
-                        .background(AppTheme.cardBg2)
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
-                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(AppTheme.border, lineWidth: 1))
+                    Spacer()
                 }
+                .padding(.horizontal, 20)
+                .padding(.top, 20)
+                .padding(.bottom, 16)
 
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("FLOOR LABEL")
-                        .font(.system(size: 10, weight: .bold, design: .monospaced))
-                        .tracking(2)
-                        .foregroundStyle(AppTheme.textSec)
-                    TextField("e.g. FL 01, B1, P2", text: $floorLabel)
-                        .font(.system(size: 15))
-                        .foregroundStyle(AppTheme.textPri)
-                        .tint(AppTheme.green)
-                        .padding(12)
-                        .background(AppTheme.cardBg2)
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
-                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(AppTheme.border, lineWidth: 1))
-                }
+                Divider().background(AppTheme.divider)
 
-                Button {
-                    onSave()
-                    dismiss()
-                } label: {
-                    Text("Save Map")
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundStyle(.black)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                        .background(name.isEmpty ? AppTheme.textDim : AppTheme.green)
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 24) {
+
+                        // ── IMPORT SOURCE ──
+                        importSourceSection
+
+                        Divider().background(AppTheme.divider)
+
+                        // ── MAP DETAILS ──
+                        mapDetailsSection
+
+                        Divider().background(AppTheme.divider)
+
+                        // ── PREVIEW ──
+                        previewSection
+
+                        // ── INFO BOX ──
+                        HStack(alignment: .top, spacing: 10) {
+                            Image(systemName: "info.circle.fill")
+                                .font(.system(size: 16))
+                                .foregroundStyle(AppTheme.green)
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Acceptable Formats")
+                                    .font(.system(size: 14, weight: .bold))
+                                    .foregroundStyle(AppTheme.textPri)
+                                Text("Ensure maps are high-contrast. Supported formats: PDF (Vector preferred), PNG, or JPEG. Maximum file size: 25MB.")
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(AppTheme.textSec)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                        }
+                        .padding(14)
+                        .background(AppTheme.greenDim)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
-                }
-                .disabled(name.isEmpty)
-                .padding(.top, 4)
-            }
-            .padding(.horizontal, 20)
+                        .overlay(RoundedRectangle(cornerRadius: 12)
+                            .stroke(AppTheme.green.opacity(0.2), lineWidth: 1))
 
-            Spacer()
+                        // ── BUTTONS ──
+                        Button {
+                            processAndUpload()
+                        } label: {
+                            HStack(spacing: 8) {
+                                if isUploading {
+                                    ProgressView()
+                                        .tint(.black)
+                                        .scaleEffect(0.8)
+                                }
+                                Text("Process & Upload")
+                                    .font(.system(size: 16, weight: .bold))
+                            }
+                            .foregroundStyle(.black)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                            .background(canUpload ? AppTheme.green : AppTheme.textDim)
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                        }
+                        .disabled(!canUpload || isUploading)
+
+                        Button { dismiss() } label: {
+                            Text("Cancel")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundStyle(AppTheme.textSec)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 14)
+                                .background(AppTheme.cardBg2)
+                                .clipShape(RoundedRectangle(cornerRadius: 14))
+                                .overlay(RoundedRectangle(cornerRadius: 14)
+                                    .stroke(AppTheme.border, lineWidth: 1))
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 20)
+                    .padding(.bottom, 40)
+                }
+            }
+        }
+        .onChange(of: photoItem) { _, newValue in
+            Task {
+                if let data = try? await newValue?.loadTransferable(type: Data.self),
+                   let img = UIImage(data: data) {
+                    pendingImage = img
+                }
+            }
+        }
+    }
+
+    // MARK: - Import Source Section
+
+    private var importSourceSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 8) {
+                Image(systemName: "square.and.arrow.down")
+                    .font(.system(size: 13))
+                    .foregroundStyle(AppTheme.textSec)
+                Text("IMPORT SOURCE")
+                    .font(.system(size: 11, weight: .bold, design: .monospaced))
+                    .tracking(2)
+                    .foregroundStyle(AppTheme.textSec)
+            }
+
+            // Cloud + Local File row
+            HStack(spacing: 10) {
+                ForEach([ImportSource.cloud, .localFile], id: \.label) { source in
+                    sourceButton(source)
+                }
+            }
+
+            // Camera Scan — full width, uses PhotosPicker
+            PhotosPicker(selection: $photoItem, matching: .images) {
+                VStack(spacing: 8) {
+                    Image(systemName: "camera")
+                        .font(.system(size: 24))
+                        .foregroundStyle(selectedSource == .cameraScan ? .black : AppTheme.textSec)
+                    Text("Camera Scan")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(selectedSource == .cameraScan ? .black : AppTheme.textPri)
+                    Text("Instant scan of printed architectural blueprints")
+                        .font(.system(size: 11))
+                        .foregroundStyle(selectedSource == .cameraScan
+                                         ? .black.opacity(0.6) : AppTheme.textDim)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 16)
+                .background(selectedSource == .cameraScan ? AppTheme.green : AppTheme.cardBg)
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+                .overlay(RoundedRectangle(cornerRadius: 14)
+                    .stroke(selectedSource == .cameraScan
+                            ? AppTheme.green : AppTheme.border, lineWidth: 1))
+            }
+            .simultaneousGesture(TapGesture().onEnded { selectedSource = .cameraScan })
+        }
+    }
+
+    private func sourceButton(_ source: ImportSource) -> some View {
+        PhotosPicker(selection: $photoItem, matching: .images) {
+            VStack(spacing: 8) {
+                Image(systemName: source.icon)
+                    .font(.system(size: 24))
+                    .foregroundStyle(selectedSource == source ? .black : AppTheme.textSec)
+                Text(source.label)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(selectedSource == source ? .black : AppTheme.textPri)
+                Text(source.sub)
+                    .font(.system(size: 11))
+                    .foregroundStyle(selectedSource == source
+                                     ? .black.opacity(0.6) : AppTheme.textDim)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 16)
+            .background(selectedSource == source ? AppTheme.green : AppTheme.cardBg)
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .overlay(RoundedRectangle(cornerRadius: 14)
+                .stroke(selectedSource == source
+                        ? AppTheme.green : AppTheme.border, lineWidth: 1))
+        }
+        .simultaneousGesture(TapGesture().onEnded { selectedSource = source })
+    }
+
+    // MARK: - Map Details Section
+
+    private var mapDetailsSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 8) {
+                Image(systemName: "building.2")
+                    .font(.system(size: 13))
+                    .foregroundStyle(AppTheme.textSec)
+                Text("MAP DETAILS")
+                    .font(.system(size: 11, weight: .bold, design: .monospaced))
+                    .tracking(2)
+                    .foregroundStyle(AppTheme.textSec)
+            }
+
+            VStack(alignment: .leading, spacing: 14) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Building Name")
+                        .font(.system(size: 13))
+                        .foregroundStyle(AppTheme.textSec)
+                    TextField("Main Hospital Complex", text: $buildingName)
+                        .font(.system(size: 15))
+                        .foregroundStyle(AppTheme.textPri)
+                        .tint(AppTheme.green)
+                        .padding(12)
+                        .background(AppTheme.cardBg2)
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                        .overlay(RoundedRectangle(cornerRadius: 10)
+                            .stroke(AppTheme.border, lineWidth: 1))
+                }
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Floor Number")
+                        .font(.system(size: 13))
+                        .foregroundStyle(AppTheme.textSec)
+                    TextField("2", text: $floorNumber)
+                        .font(.system(size: 15))
+                        .foregroundStyle(AppTheme.textPri)
+                        .tint(AppTheme.green)
+                        .keyboardType(.numberPad)
+                        .padding(12)
+                        .frame(width: 80)
+                        .background(AppTheme.cardBg2)
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                        .overlay(RoundedRectangle(cornerRadius: 10)
+                            .stroke(AppTheme.border, lineWidth: 1))
+                }
+
+                Text("* Must correspond to existing building schematics for route calculation.")
+                    .font(.system(size: 11))
+                    .foregroundStyle(AppTheme.textDim)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 6)
+                    .overlay(RoundedRectangle(cornerRadius: 6)
+                        .stroke(AppTheme.textDim.opacity(0.4), lineWidth: 1))
+            }
+            .padding(16)
+            .background(AppTheme.cardBg)
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .overlay(RoundedRectangle(cornerRadius: 14)
+                .stroke(AppTheme.green.opacity(0.3), lineWidth: 1))
+        }
+    }
+
+    // MARK: - Preview Section
+
+    private var previewSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("PREVIEW")
+                .font(.system(size: 11, weight: .bold, design: .monospaced))
+                .tracking(2)
+                .foregroundStyle(AppTheme.textSec)
+
+            VStack(spacing: 12) {
+                if let img = pendingImage {
+                    ZStack(alignment: .topTrailing) {
+                        Image(uiImage: img)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(maxHeight: 160)
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+
+                        Text("Staged")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(AppTheme.green)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(AppTheme.cardBg2)
+                            .clipShape(Capsule())
+                            .overlay(Capsule().stroke(AppTheme.green.opacity(0.3), lineWidth: 1))
+                            .padding(8)
+                    }
+
+                    Text(buildingName.isEmpty ? "unnamed_scan.jpg" : "\(buildingName.lowercased().replacingOccurrences(of: " ", with: "_")).jpg")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(AppTheme.textPri)
+                    Text("Ready for hazard processing")
+                        .font(.system(size: 12))
+                        .foregroundStyle(AppTheme.textSec)
+
+                    // Green progress bar
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(AppTheme.green)
+                        .frame(height: 3)
+                } else {
+                    VStack(spacing: 10) {
+                        Image(systemName: "doc.viewfinder")
+                            .font(.system(size: 36))
+                            .foregroundStyle(AppTheme.textDim)
+                        Text("No file selected")
+                            .font(.system(size: 13))
+                            .foregroundStyle(AppTheme.textSec)
+                        Text("Choose an import source above")
+                            .font(.system(size: 12))
+                            .foregroundStyle(AppTheme.textDim)
+                    }
+                    .padding(.vertical, 30)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .padding(16)
+            .background(AppTheme.cardBg)
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(style: StrokeStyle(lineWidth: 1, dash: [6, 4]))
+                    .foregroundStyle(pendingImage != nil ? AppTheme.green.opacity(0.4) : AppTheme.textDim)
+            )
+        }
+    }
+
+    // MARK: - Upload
+
+    private func processAndUpload() {
+        guard let img = pendingImage, !buildingName.isEmpty else { return }
+        isUploading = true
+
+        let floor = floorNumber.isEmpty ? "FL" : "FL \(floorNumber)"
+        vm.add(name: buildingName, floorLabel: floor, image: img)
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            isUploading = false
+            dismiss()
         }
     }
 }

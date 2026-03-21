@@ -1,16 +1,5 @@
 import SwiftUI
 
-// MARK: - Coordinate mapper (matches LiveMapView)
-
-private func mapNodeToPoint(_ coords: Coordinates, in canvasSize: CGSize) -> CGPoint {
-    let minX = 2.0, maxX = 63.0, minY = 1.0, maxY = 29.0, padding = 20.0
-    let usableW = canvasSize.width  - padding * 2
-    let usableH = canvasSize.height - padding * 2
-    let x = padding + ((coords.x - minX) / (maxX - minX)) * usableW
-    let y = padding + ((coords.y - minY) / (maxY - minY)) * usableH
-    return CGPoint(x: x, y: y)
-}
-
 // MARK: - ReportHazardView
 
 struct ReportHazardView: View {
@@ -23,9 +12,21 @@ struct ReportHazardView: View {
     @State private var notes = ""
     @State private var submitted = false
 
-    private var selectedNode: Node? {
-        guard let id = selectedHazardNodeID, let building = viewModel.buildingPackage else { return nil }
-        return building.node(id: id)
+    // Firestore nodes
+    @State private var firestoreNodes: [CustomNode] = []
+    @State private var isLoadingNodes = false
+    @State private var loadError: String? = nil
+
+    // Zoom & pan
+    @State private var scale: CGFloat = 1.0
+    @State private var lastScale: CGFloat = 1.0
+    @State private var panOffset: CGSize = .zero
+    @State private var lastPanOffset: CGSize = .zero
+
+    private var isZoomed: Bool { scale != 1.0 || panOffset != .zero }
+
+    private var selectedCustomNode: CustomNode? {
+        firestoreNodes.first(where: { $0.id == selectedHazardNodeID })
     }
 
     var body: some View {
@@ -72,14 +73,31 @@ struct ReportHazardView: View {
                 }
             }
         }
-        .onAppear {
-            if selectedHazardNodeID == nil {
-                selectedHazardNodeID = viewModel.selectedStartNodeID
-            }
+        .task {
+            await loadFirestoreNodes()
         }
     }
 
-    // MARK: - Location Section (Interactive Mini Map)
+    // MARK: - Load nodes from Firestore
+
+    private func loadFirestoreNodes() async {
+        let mapID = floorPlanVM.activeMapID ?? "default"
+        isLoadingNodes = true
+        loadError = nil
+        do {
+            let nodes = try await FirestoreService.shared.fetchCustomNodes(mapID: mapID)
+            firestoreNodes = nodes
+            // Default selection: first node, or none
+            if selectedHazardNodeID == nil, let first = nodes.first {
+                selectedHazardNodeID = first.id
+            }
+        } catch {
+            loadError = error.localizedDescription
+        }
+        isLoadingNodes = false
+    }
+
+    // MARK: - Location Section (Interactive Mini Map with Firestore nodes + Zoom/Pan)
 
     private var locationSection: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -91,8 +109,13 @@ struct ReportHazardView: View {
                     .tracking(2)
                     .foregroundStyle(AppTheme.textSec)
                 Spacer()
-                if let node = selectedNode {
-                    Text(node.name)
+
+                if isLoadingNodes {
+                    ProgressView()
+                        .tint(AppTheme.textSec)
+                        .scaleEffect(0.7)
+                } else if let node = selectedCustomNode {
+                    Text(node.label.isEmpty ? node.id.prefix(6).description : node.label)
                         .font(.system(size: 11, weight: .semibold))
                         .foregroundStyle(AppTheme.red)
                         .padding(.horizontal, 10)
@@ -102,179 +125,296 @@ struct ReportHazardView: View {
                 }
             }
 
-            // Interactive mini map
+            // Interactive mini map with zoom/pan
             GeometryReader { geo in
-                let canvasSize = CGSize(width: geo.size.width, height: 220)
+                let canvasSize = CGSize(width: geo.size.width, height: 260)
 
                 ZStack {
-                    // Floor plan background
-                    if let img = floorPlanVM.activeMapImage {
-                        Image(uiImage: img)
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: canvasSize.width, height: canvasSize.height)
-                            .clipped()
-                            .opacity(0.35)
-                    }
-
-                    // Canvas drawing layer
-                    Canvas { ctx, size in
-                        guard let building = viewModel.buildingPackage else { return }
-
-                        let nodeMap = Dictionary(uniqueKeysWithValues: building.nodes.map { ($0.id, $0) })
-
-                        // Building outline
-                        let outlineRect = CGRect(
-                            x: 20 * 0.4, y: 20 * 0.4,
-                            width: size.width - 20 * 0.8,
-                            height: size.height - 20 * 0.8
-                        )
-                        if floorPlanVM.activeMapImage == nil {
-                            ctx.fill(Path(outlineRect), with: .color(Color(white: 0.06)))
-                        }
-                        ctx.stroke(Path(outlineRect),
-                                   with: .color(Color(white: 0.18)),
-                                   style: StrokeStyle(lineWidth: 1))
-
-                        // Edges
-                        for edge in building.edges {
-                            guard let fromNode = nodeMap[edge.fromNodeID],
-                                  let toNode = nodeMap[edge.toNodeID] else { continue }
-
-                            let fromPt = mapNodeToPoint(fromNode.coordinates, in: canvasSize)
-                            let toPt = mapNodeToPoint(toNode.coordinates, in: canvasSize)
-
-                            var edgePath = Path()
-                            edgePath.move(to: fromPt)
-                            edgePath.addLine(to: toPt)
-
-                            ctx.stroke(edgePath,
-                                       with: .color(Color(white: floorPlanVM.activeMapImage == nil ? 0.22 : 0.50)),
-                                       style: StrokeStyle(lineWidth: 0.8))
+                    // ── Layer 1: transformed content (floor plan + nodes) ──
+                    ZStack {
+                        // Floor plan background
+                        if let img = floorPlanVM.activeMapImage {
+                            Image(uiImage: img)
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: canvasSize.width, height: canvasSize.height)
+                                .clipped()
+                                .opacity(0.65)
+                        } else {
+                            AppTheme.cardBg
                         }
 
-                        // Nodes
-                        for node in building.nodes {
-                            let center = mapNodeToPoint(node.coordinates, in: canvasSize)
-                            let isSelected = node.id == selectedHazardNodeID
-
-                            switch node.type {
-                            case .room:
-                                let r: CGFloat = 8
-                                let rect = CGRect(x: center.x - r, y: center.y - r, width: r * 2, height: r * 2)
-                                ctx.fill(Path(roundedRect: rect, cornerRadius: 2),
-                                         with: .color(isSelected
-                                                      ? AppTheme.red.opacity(0.25)
-                                                      : Color(white: floorPlanVM.activeMapImage == nil ? 0.12 : 0.0).opacity(0.5)))
-                                ctx.stroke(Path(roundedRect: rect, cornerRadius: 2),
-                                           with: .color(isSelected ? AppTheme.red : Color(white: 0.35)),
-                                           lineWidth: isSelected ? 1.5 : 0.8)
-
-                            case .exit:
-                                let s: CGFloat = 8
-                                let diamond = Path { p in
-                                    p.move(to:    CGPoint(x: center.x,     y: center.y - s))
-                                    p.addLine(to: CGPoint(x: center.x + s, y: center.y))
-                                    p.addLine(to: CGPoint(x: center.x,     y: center.y + s))
-                                    p.addLine(to: CGPoint(x: center.x - s, y: center.y))
-                                    p.closeSubpath()
-                                }
-                                let exitColor = isSelected ? AppTheme.red : AppTheme.green
-                                ctx.fill(diamond, with: .color(exitColor.opacity(0.2)))
-                                ctx.stroke(diamond, with: .color(exitColor), lineWidth: 1.2)
-
-                            case .refugePoint:
-                                let r: CGFloat = 7
-                                let circle = Path(ellipseIn: CGRect(x: center.x - r, y: center.y - r,
-                                                                     width: r * 2, height: r * 2))
-                                ctx.fill(circle, with: .color(AppTheme.amber.opacity(0.15)))
-                                ctx.stroke(circle, with: .color(AppTheme.amber), lineWidth: 1.2)
-
-                            case .stairwell:
-                                let r: CGFloat = 6
-                                let rect = CGRect(x: center.x - r, y: center.y - r, width: r * 2, height: r * 2)
-                                ctx.fill(Path(rect), with: .color(Color(white: 0.15)))
-                                ctx.stroke(Path(rect), with: .color(Color(white: 0.35)), lineWidth: 0.8)
-
-                            case .intersection:
-                                let r: CGFloat = 2.5
-                                let dot = Path(ellipseIn: CGRect(x: center.x - r, y: center.y - r,
-                                                                  width: r * 2, height: r * 2))
-                                ctx.fill(dot, with: .color(Color(white: 0.30)))
-
-                            case .lift:
-                                let r: CGFloat = 5
-                                let rect = CGRect(x: center.x - r, y: center.y - r, width: r * 2, height: r * 2)
-                                ctx.stroke(Path(roundedRect: rect, cornerRadius: 2),
-                                           with: .color(Color(white: 0.28)), lineWidth: 0.8)
-                            }
-
-                            // Selected node — red pulse ring + pin
-                            if isSelected {
-                                let pr: CGFloat = 14
-                                let pulse = Path(ellipseIn: CGRect(x: center.x - pr, y: center.y - pr,
-                                                                    width: pr * 2, height: pr * 2))
-                                ctx.fill(pulse, with: .color(AppTheme.red.opacity(0.20)))
-                                ctx.stroke(pulse, with: .color(AppTheme.red), lineWidth: 2)
-
-                                let dr: CGFloat = 4
-                                let dot = Path(ellipseIn: CGRect(x: center.x - dr, y: center.y - dr,
-                                                                  width: dr * 2, height: dr * 2))
-                                ctx.fill(dot, with: .color(AppTheme.red))
-
-                                let pinLabel = Text("HAZARD")
-                                    .font(.system(size: 7, weight: .black, design: .monospaced))
-                                    .foregroundStyle(AppTheme.red)
-                                ctx.draw(pinLabel, at: CGPoint(x: center.x, y: center.y - 20))
-                            }
-
-                            // Node labels for rooms, exits, refuge points
-                            if node.type == .room || node.type == .exit || node.type == .refugePoint {
-                                let label = Text(node.name)
-                                    .font(.system(size: 7, weight: .medium))
-                                    .foregroundStyle(Color(white: floorPlanVM.activeMapImage == nil ? 0.50 : 0.85))
-                                ctx.draw(label, at: CGPoint(x: center.x, y: center.y + 14))
-                            }
+                        // Canvas: draw Firestore nodes + edges
+                        Canvas { ctx, size in
+                            drawFirestoreGraph(ctx: &ctx, size: size)
                         }
                     }
+                    .frame(width: canvasSize.width, height: canvasSize.height)
+                    .scaleEffect(scale, anchor: .center)
+                    .offset(panOffset)
                     .allowsHitTesting(false)
 
-                    // Tap detection overlay
+                    // ── Layer 2: gesture overlay ──
                     Color.clear
                         .contentShape(Rectangle())
                         .gesture(
-                            DragGesture(minimumDistance: 0)
-                                .onEnded { value in
-                                    guard let node = nearestNode(
-                                        to: value.location,
-                                        canvasSize: canvasSize,
-                                        threshold: 30
-                                    ) else { return }
-                                    withAnimation(.easeInOut(duration: 0.15)) {
-                                        selectedHazardNodeID = node.id
+                            SimultaneousGesture(
+                                MagnificationGesture()
+                                    .onChanged { value in
+                                        scale = min(max(lastScale * value, 1.0), 5.0)
                                     }
-                                }
+                                    .onEnded { _ in lastScale = scale },
+                                DragGesture(minimumDistance: 0)
+                                    .onChanged { value in
+                                        let d = hypot(value.translation.width,
+                                                      value.translation.height)
+                                        if d > 8 {
+                                            panOffset = CGSize(
+                                                width:  lastPanOffset.width  + value.translation.width,
+                                                height: lastPanOffset.height + value.translation.height
+                                            )
+                                        }
+                                    }
+                                    .onEnded { value in
+                                        let d = hypot(value.translation.width,
+                                                      value.translation.height)
+                                        if d < 8 {
+                                            let canvasPt = screenToCanvas(
+                                                value.startLocation, in: canvasSize)
+                                            handleNodeTap(canvasPt, in: canvasSize)
+                                        } else {
+                                            lastPanOffset = panOffset
+                                        }
+                                    }
+                            )
                         )
+
+                    // ── Layer 3: fixed UI overlays (zoom badge, reset button) ──
+                    VStack {
+                        HStack {
+                            Spacer()
+                            // Zoom indicator + reset
+                            if isZoomed {
+                                Button {
+                                    withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                                        scale = 1.0; lastScale = 1.0
+                                        panOffset = .zero; lastPanOffset = .zero
+                                    }
+                                } label: {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "arrow.down.right.and.arrow.up.left")
+                                            .font(.system(size: 9, weight: .bold))
+                                        Text(String(format: "%.1f×", scale))
+                                            .font(.system(size: 10, weight: .bold, design: .monospaced))
+                                    }
+                                    .foregroundStyle(AppTheme.amber)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 5)
+                                    .background(AppTheme.cardBg2.opacity(0.9))
+                                    .clipShape(Capsule())
+                                    .overlay(Capsule().stroke(AppTheme.amber.opacity(0.3), lineWidth: 1))
+                                }
+                            }
+                        }
+                        .padding(8)
+                        Spacer()
+
+                        // Node count badge
+                        HStack {
+                            HStack(spacing: 4) {
+                                Circle()
+                                    .fill(firestoreNodes.isEmpty ? AppTheme.red : AppTheme.green)
+                                    .frame(width: 6, height: 6)
+                                Text(firestoreNodes.isEmpty
+                                     ? "NO NODES"
+                                     : "\(firestoreNodes.count) NODES")
+                                    .font(.system(size: 9, weight: .bold, design: .monospaced))
+                                    .foregroundStyle(AppTheme.textSec)
+                            }
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(AppTheme.cardBg2.opacity(0.85))
+                            .clipShape(Capsule())
+                            Spacer()
+                        }
+                        .padding(8)
+                    }
                 }
-                .frame(height: 220)
+                .frame(height: 260)
                 .background(AppTheme.cardBg)
                 .clipShape(RoundedRectangle(cornerRadius: 14))
                 .overlay(
                     RoundedRectangle(cornerRadius: 14)
-                        .stroke(selectedHazardNodeID != nil ? AppTheme.red.opacity(0.3) : AppTheme.border,
+                        .stroke(selectedHazardNodeID != nil
+                                ? AppTheme.red.opacity(0.3) : AppTheme.border,
                                 lineWidth: 1)
                 )
             }
-            .frame(height: 220)
+            .frame(height: 260)
 
-            // Hint text
-            Text("TAP A NODE ON THE MAP TO SET HAZARD LOCATION")
-                .font(.system(size: 9, weight: .bold, design: .monospaced))
-                .tracking(1)
-                .foregroundStyle(AppTheme.textDim)
-                .frame(maxWidth: .infinity)
-                .padding(.top, 8)
+            // Hint / error text
+            if let err = loadError {
+                Text("FAILED TO LOAD NODES: \(err.uppercased())")
+                    .font(.system(size: 9, weight: .bold, design: .monospaced))
+                    .foregroundStyle(AppTheme.red)
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 6)
+            } else {
+                Text("PINCH TO ZOOM · TAP A NODE TO SET HAZARD LOCATION")
+                    .font(.system(size: 9, weight: .bold, design: .monospaced))
+                    .tracking(0.5)
+                    .foregroundStyle(AppTheme.textDim)
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 6)
+            }
         }
+    }
+
+    // MARK: - Draw Firestore nodes on Canvas
+
+    private func drawFirestoreGraph(ctx: inout GraphicsContext, size: CGSize) {
+        guard !firestoreNodes.isEmpty else {
+            let label = Text(isLoadingNodes ? "Loading nodes…" : "No nodes found")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Color.white.opacity(0.3))
+            ctx.draw(label, at: CGPoint(x: size.width / 2, y: size.height / 2))
+            return
+        }
+
+        let nodeMap = Dictionary(uniqueKeysWithValues: firestoreNodes.map { ($0.id, $0) })
+
+        // Auto-connect nearby nodes (same proximity logic as MapEditorView)
+        let threshold: Double = 0.13
+        for i in 0..<firestoreNodes.count {
+            for j in (i + 1)..<firestoreNodes.count {
+                let ni = firestoreNodes[i], nj = firestoreNodes[j]
+                let d = hypot(ni.nx - nj.nx, ni.ny - nj.ny)
+                guard d <= threshold else { continue }
+
+                let a = CGPoint(x: CGFloat(ni.nx) * size.width,
+                                y: CGFloat(ni.ny) * size.height)
+                let b = CGPoint(x: CGFloat(nj.nx) * size.width,
+                                y: CGFloat(nj.ny) * size.height)
+
+                var line = Path()
+                line.move(to: a)
+                line.addLine(to: b)
+
+                let edgeDanger = ni.isDanger || nj.isDanger
+                ctx.stroke(line,
+                           with: .color(edgeDanger
+                                        ? AppTheme.red.opacity(0.35)
+                                        : Color(white: 0.30).opacity(0.5)),
+                           style: StrokeStyle(lineWidth: 0.8))
+            }
+        }
+
+        // Draw nodes
+        for node in firestoreNodes {
+            let center = CGPoint(x: CGFloat(node.nx) * size.width,
+                                 y: CGFloat(node.ny) * size.height)
+            let isSelected = node.id == selectedHazardNodeID
+
+            let darkFill = Color(white: 0.18)
+
+            if node.isExit {
+                // Amber diamond for exits
+                let s: CGFloat = 12
+                let diamond = Path { p in
+                    p.move(to:    CGPoint(x: center.x,     y: center.y - s))
+                    p.addLine(to: CGPoint(x: center.x + s, y: center.y))
+                    p.addLine(to: CGPoint(x: center.x,     y: center.y + s))
+                    p.addLine(to: CGPoint(x: center.x - s, y: center.y))
+                    p.closeSubpath()
+                }
+                let exitColor = node.isDanger ? AppTheme.red : AppTheme.amber
+                ctx.fill(diamond, with: .color(exitColor.opacity(0.85)))
+                ctx.stroke(diamond, with: .color(exitColor), lineWidth: 1.5)
+
+                let exitLabel = Text("EXIT")
+                    .font(.system(size: 7, weight: .black, design: .monospaced))
+                    .foregroundStyle(AppTheme.red)
+                ctx.draw(exitLabel, at: CGPoint(x: center.x, y: center.y + 20))
+            } else {
+                // Dark circle with red ring for regular nodes
+                let r: CGFloat = 12
+                let circle = Path(ellipseIn: CGRect(x: center.x - r, y: center.y - r,
+                                                     width: r * 2, height: r * 2))
+                ctx.fill(circle, with: .color(darkFill.opacity(0.85)))
+                ctx.stroke(circle,
+                           with: .color(isSelected ? AppTheme.green
+                                        : (node.isDanger ? AppTheme.red : AppTheme.red.opacity(0.8))),
+                           style: StrokeStyle(lineWidth: isSelected ? 2.5 : 2))
+            }
+
+            // Danger warning triangle
+            if node.isDanger {
+                let triSize: CGFloat = 7
+                let triY = center.y - 16
+                let triangle = Path { p in
+                    p.move(to:    CGPoint(x: center.x,           y: triY - triSize))
+                    p.addLine(to: CGPoint(x: center.x + triSize, y: triY + triSize * 0.6))
+                    p.addLine(to: CGPoint(x: center.x - triSize, y: triY + triSize * 0.6))
+                    p.closeSubpath()
+                }
+                ctx.fill(triangle, with: .color(Color.white.opacity(0.9)))
+                ctx.stroke(triangle, with: .color(AppTheme.red), lineWidth: 1)
+            }
+
+            // Selected: green pulse ring
+            if isSelected {
+                let pr: CGFloat = 16
+                let pulse = Path(ellipseIn: CGRect(x: center.x - pr, y: center.y - pr,
+                                                    width: pr * 2, height: pr * 2))
+                ctx.fill(pulse, with: .color(AppTheme.green.opacity(0.20)))
+                ctx.stroke(pulse, with: .color(AppTheme.green), lineWidth: 2.5)
+
+                let dr: CGFloat = 5
+                let dot = Path(ellipseIn: CGRect(x: center.x - dr, y: center.y - dr,
+                                                  width: dr * 2, height: dr * 2))
+                ctx.fill(dot, with: .color(AppTheme.green))
+            }
+
+            // Node label
+            let label = Text(node.label.isEmpty ? "N?" : node.label)
+                .font(.system(size: 8, weight: .semibold))
+                .foregroundStyle(Color.white.opacity(0.85))
+            ctx.draw(label, at: CGPoint(x: center.x,
+                                        y: center.y + (node.isExit ? 28 : 18)))
+        }
+    }
+
+    // MARK: - Coordinate conversion (screen → canvas accounting for zoom/pan)
+
+    private func screenToCanvas(_ pt: CGPoint, in size: CGSize) -> CGPoint {
+        CGPoint(
+            x: (pt.x - panOffset.width  - size.width  / 2) / scale + size.width  / 2,
+            y: (pt.y - panOffset.height - size.height / 2) / scale + size.height / 2
+        )
+    }
+
+    private func handleNodeTap(_ pt: CGPoint, in size: CGSize) {
+        let threshold: CGFloat = 28 / scale
+        guard let nearest = nearestCustomNode(to: pt, in: size, threshold: threshold) else { return }
+        withAnimation(.easeInOut(duration: 0.15)) {
+            selectedHazardNodeID = nearest.id
+        }
+    }
+
+    private func nearestCustomNode(to pt: CGPoint, in size: CGSize,
+                                    threshold: CGFloat) -> CustomNode? {
+        var closest: CustomNode?
+        var closestDist = threshold
+        for node in firestoreNodes {
+            let nodePt = CGPoint(x: CGFloat(node.nx) * size.width,
+                                 y: CGFloat(node.ny) * size.height)
+            let dist = hypot(nodePt.x - pt.x, nodePt.y - pt.y)
+            if dist < closestDist {
+                closestDist = dist
+                closest = node
+            }
+        }
+        return closest
     }
 
     // MARK: - Hazard Type
@@ -392,8 +532,9 @@ struct ReportHazardView: View {
                 .font(.system(size: 22, weight: .black))
                 .foregroundStyle(AppTheme.textPri)
 
-            if let node = selectedNode {
-                Text("Hazard reported at **\(node.name)**.\nThe routing engine is recalculating safe paths.")
+            if let node = selectedCustomNode {
+                let name = node.label.isEmpty ? "Node \(node.id.prefix(6))" : node.label
+                Text("Hazard reported at **\(name)**.\nThe routing engine is recalculating safe paths.")
                     .font(.system(size: 14))
                     .foregroundStyle(AppTheme.textSec)
                     .multilineTextAlignment(.center)
@@ -419,30 +560,34 @@ struct ReportHazardView: View {
         }
     }
 
-    // MARK: - Helpers
-
-    private func nearestNode(to point: CGPoint, canvasSize: CGSize, threshold: CGFloat) -> Node? {
-        guard let building = viewModel.buildingPackage else { return nil }
-        var closest: Node?
-        var closestDist = threshold
-        for node in building.nodes {
-            let nodePt = mapNodeToPoint(node.coordinates, in: canvasSize)
-            let dist = hypot(nodePt.x - point.x, nodePt.y - point.y)
-            if dist < closestDist {
-                closestDist = dist
-                closest = node
-            }
-        }
-        return closest
-    }
-
     // MARK: - Submit logic
 
     private func submitReport(type: ReportHazardType) {
         guard let nodeID = selectedHazardNodeID else { return }
 
-        // Place ad-hoc hazard at the selected node with severity based on type
-        viewModel.placeAdHocHazard(nodeID: nodeID, severity: type.severity)
+        // If the selected node maps to a BuildingPackage node, place ad-hoc hazard
+        if let _ = viewModel.buildingPackage?.node(id: nodeID) {
+            viewModel.placeAdHocHazard(nodeID: nodeID, severity: type.severity)
+        }
+
+        // Also report to Firestore for persistence
+        if let node = selectedCustomNode {
+            let hazard = Hazard(
+                buildingId: "",
+                floorId: "",
+                type: type.rawValue.lowercased(),
+                xPercent: node.nx,
+                yPercent: node.ny,
+                confidence: 1.0,
+                confirmations: 1,
+                reportedBy: UIDevice.current.identifierForVendor?.uuidString ?? "unknown",
+                timestamp: Date(),
+                expiresAt: Date().addingTimeInterval(600)
+            )
+            Task {
+                try? await FirestoreService.shared.reportHazard(hazard)
+            }
+        }
 
         withAnimation { submitted = true }
     }
