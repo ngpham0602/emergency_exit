@@ -2,7 +2,7 @@ import Foundation
 
 struct BuildingPackage: Codable {
     let metadata: BuildingMetadata
-    let floors: [Floor]
+    let floors: [PackageFloor]
     let nodes: [Node]
     let edges: [Edge]
     let exits: [BuildingExit]
@@ -21,7 +21,7 @@ struct BuildingMetadata: Codable {
     let version: String
 }
 
-struct Floor: Codable, Identifiable {
+struct PackageFloor: Codable, Identifiable {
     let id: String
     let name: String
     let level: Int
