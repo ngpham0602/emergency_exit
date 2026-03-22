@@ -3,7 +3,7 @@ import UIKit
 import FirebaseFirestore
 import FirebaseStorage
 
-// Singleton — one shared instance used everywhere in SafeExit
+// Singleton — one shared instance used everywhere in Saferoute
 // Usage anywhere in the app: FirestoreService.shared.fetchBuildings()
 
 // Firestore document for a floor plan library entry.
@@ -261,7 +261,7 @@ class FirestoreService {
 
     // —— EMERGENCY ALERTS ———————————————————————————————————————————————
 
-    /// Security officer broadcasts an emergency alert to all employees.
+    /// Security officer broadcasts an emergency alert to all users.
     func sendEmergencyAlert(_ alert: EmergencyAlert) async throws {
         try db.collection("emergencyAlerts").document(alert.id).setData(from: alert)
     }

@@ -1,6 +1,6 @@
 // DesignConceptsPreview.swift
 // Standalone design showcase — not connected to AppViewModel.
-// To preview: temporarily set this as the root in SafeExitApp.swift,
+// To preview: temporarily set this as the root in SaferouteApp.swift,
 // or use the Xcode #Preview macros below each view.
 
 import SwiftUI
@@ -75,7 +75,7 @@ struct Concept1_SignalRed: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 6) {
                 Circle().fill(red).frame(width: 10, height: 10)
-                Text("SafeExit")
+                Text("Saferoute")
                     .font(.system(size: 17, weight: .semibold, design: .rounded))
                     .foregroundStyle(Color(uiColor: .label))
             }
@@ -263,7 +263,7 @@ struct Concept2_DarkShield: View {
 
             Spacer().frame(height: 28)
 
-            Text("SAFEEXIT")
+            Text("SAFEROUTE")
                 .font(.system(size: 24, weight: .black, design: .monospaced))
                 .foregroundStyle(.white)
                 .tracking(8)
@@ -440,7 +440,7 @@ struct Concept3_BreathingRoom: View {
         VStack(alignment: .leading, spacing: 0) {
             Spacer()
 
-            Text("SafeExit")
+            Text("Saferoute")
                 .font(.system(size: 28, weight: .regular))
                 .foregroundStyle(ink)
 
@@ -587,7 +587,7 @@ struct Concept4_GridMap: View {
                 .frame(width: 220, height: 160)
                 .padding(.bottom, 32)
 
-            Text("SafeExit")
+            Text("Saferoute")
                 .font(.system(size: 32, weight: .black, design: .monospaced))
                 .foregroundStyle(ink)
 
@@ -631,7 +631,7 @@ struct Concept4_GridMap: View {
             Spacer()
 
             VStack(alignment: .leading, spacing: 32) {
-                Text("Sign in\nto SafeExit")
+                Text("Sign in\nto Saferoute")
                     .font(.system(size: 34, weight: .black))
                     .foregroundStyle(ink)
 
@@ -737,7 +737,7 @@ struct Concept5_SoftEmergency: View {
     var landingView: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Text("SafeExit")
+                Text("Saferoute")
                     .font(.system(size: 20, weight: .bold))
                     .foregroundStyle(ink)
                 Spacer()

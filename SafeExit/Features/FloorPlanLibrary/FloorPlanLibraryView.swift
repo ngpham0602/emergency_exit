@@ -223,7 +223,7 @@ final class FloorPlanLibraryViewModel: ObservableObject {
     }
 
     /// Switch the currently viewed map without changing any status in Firestore.
-    /// Used by the map-switcher widget so employees can browse all floor plans.
+    /// Used by the map-switcher widget so users can browse all floor plans.
     func viewMap(_ entry: FloorPlanEntry) {
         activeMapID    = entry.id
         activeMapImage = thumbnail(for: entry.id)

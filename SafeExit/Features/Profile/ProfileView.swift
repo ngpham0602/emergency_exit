@@ -8,6 +8,7 @@ struct ProfileView: View {
     @State private var biometricLock      = false
     @State private var showSignOutConfirm = false
     @State private var showFirebaseTest   = false
+    @State private var showSendEmergency = false
 
     private let safetyContacts: [SafetyContact] = [
         SafetyContact(name: "Emergency Response", role: "Security",       icon: "shield.fill"),
@@ -75,7 +76,7 @@ struct ProfileView: View {
                             .font(.system(size: 20, weight: .black))
                             .foregroundStyle(AppTheme.textPri)
 
-                        Text(auth.userRole.rawValue.uppercased())
+                        Text(auth.userRole.displayName.uppercased())
                             .font(.system(size: 11, weight: .bold, design: .monospaced))
                             .tracking(2)
                             .foregroundStyle(AppTheme.textSec)
@@ -107,7 +108,7 @@ struct ProfileView: View {
                                     .foregroundStyle(AppTheme.textSec)
                                     .padding(.horizontal, 2)
 
-                            Button {} label: {
+                            Button { showSendEmergency = true } label: {
                                 HStack(spacing: 10) {
                                     Image(systemName: "shield.fill")
                                         .font(.system(size: 16))
@@ -122,6 +123,7 @@ struct ProfileView: View {
                             }
                         }
                         .darkCard()
+                        }
 
                         // Safety contacts
                         VStack(alignment: .leading, spacing: 12) {

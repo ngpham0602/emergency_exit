@@ -59,7 +59,7 @@ struct SendEmergencyView: View {
                         .foregroundStyle(.white)
                         .padding(.bottom, 6)
 
-                    Text("All employees will receive a critical alert\nthat bypasses silent mode.")
+                    Text("All users will receive a critical alert\nthat bypasses silent mode.")
                         .font(.system(size: 13))
                         .foregroundStyle(AppTheme.textSec)
                         .multilineTextAlignment(.center)
@@ -91,7 +91,7 @@ struct SendEmergencyView: View {
                                 .font(.system(size: 16, weight: .black))
                                 .tracking(2)
                                 .foregroundStyle(AppTheme.green)
-                            Text("All employees have been notified.")
+                            Text("All users have been notified.")
                                 .font(.system(size: 13))
                                 .foregroundStyle(AppTheme.textSec)
                         }
@@ -145,7 +145,7 @@ struct SendEmergencyView: View {
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("This will send a critical notification to ALL employees in the building. This cannot be undone.")
+            Text("This will send a critical notification to ALL users in the building. This cannot be undone.")
         }
     }
 

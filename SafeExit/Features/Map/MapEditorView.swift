@@ -280,7 +280,7 @@ struct MapEditorView: View {
     @State private var panOffset:       CGSize  = .zero
     @State private var lastPanOffset:   CGSize  = .zero
 
-    private var isEmployee: Bool { authVM.userRole != .security }
+    private var isUser: Bool { authVM.userRole != .security }
     private var isZoomed:   Bool { scale != 1.0 || panOffset != .zero }
 
     var body: some View {
@@ -377,8 +377,8 @@ struct MapEditorView: View {
                             .allowsHitTesting(false)
                         }
 
-                        // Map Switcher widget — employees only, fixed bottom-left
-                        if isEmployee {
+                        // Map Switcher widget — users only, fixed bottom-left
+                        if isUser {
                             VStack {
                                 Spacer()
                                 HStack {

@@ -281,7 +281,7 @@ struct ReportHazardView: View {
             return
         }
 
-        let nodeMap = Dictionary(uniqueKeysWithValues: firestoreNodes.map { ($0.id, $0) })
+        let _ = Dictionary(uniqueKeysWithValues: firestoreNodes.map { ($0.id, $0) })
 
         // Auto-connect nearby nodes (same proximity logic as MapEditorView)
         let threshold: Double = 0.13
@@ -305,7 +305,7 @@ struct ReportHazardView: View {
                            with: .color(edgeDanger
                                         ? AppTheme.red.opacity(0.35)
                                         : Color(white: 0.30).opacity(0.5)),
-                           style: StrokeStyle(lineWidth: 0.8))
+                           style: StrokeStyle(lineWidth: 0.5))
             }
         }
 
@@ -319,7 +319,7 @@ struct ReportHazardView: View {
 
             if node.isExit {
                 // Amber diamond for exits
-                let s: CGFloat = 12
+                let s: CGFloat = 6
                 let diamond = Path { p in
                     p.move(to:    CGPoint(x: center.x,     y: center.y - s))
                     p.addLine(to: CGPoint(x: center.x + s, y: center.y))
@@ -329,28 +329,28 @@ struct ReportHazardView: View {
                 }
                 let exitColor = node.isDanger ? AppTheme.red : AppTheme.amber
                 ctx.fill(diamond, with: .color(exitColor.opacity(0.85)))
-                ctx.stroke(diamond, with: .color(exitColor), lineWidth: 1.5)
+                ctx.stroke(diamond, with: .color(exitColor), lineWidth: 1)
 
                 let exitLabel = Text("EXIT")
-                    .font(.system(size: 7, weight: .black, design: .monospaced))
+                    .font(.system(size: 5, weight: .black, design: .monospaced))
                     .foregroundStyle(AppTheme.red)
-                ctx.draw(exitLabel, at: CGPoint(x: center.x, y: center.y + 20))
+                ctx.draw(exitLabel, at: CGPoint(x: center.x, y: center.y + 12))
             } else {
                 // Dark circle with red ring for regular nodes
-                let r: CGFloat = 12
+                let r: CGFloat = 6
                 let circle = Path(ellipseIn: CGRect(x: center.x - r, y: center.y - r,
                                                      width: r * 2, height: r * 2))
                 ctx.fill(circle, with: .color(darkFill.opacity(0.85)))
                 ctx.stroke(circle,
                            with: .color(isSelected ? AppTheme.green
                                         : (node.isDanger ? AppTheme.red : AppTheme.red.opacity(0.8))),
-                           style: StrokeStyle(lineWidth: isSelected ? 2.5 : 2))
+                           style: StrokeStyle(lineWidth: isSelected ? 1.5 : 1))
             }
 
             // Danger warning triangle
             if node.isDanger {
-                let triSize: CGFloat = 7
-                let triY = center.y - 16
+                let triSize: CGFloat = 4
+                let triY = center.y - 9
                 let triangle = Path { p in
                     p.move(to:    CGPoint(x: center.x,           y: triY - triSize))
                     p.addLine(to: CGPoint(x: center.x + triSize, y: triY + triSize * 0.6))
@@ -358,18 +358,18 @@ struct ReportHazardView: View {
                     p.closeSubpath()
                 }
                 ctx.fill(triangle, with: .color(Color.white.opacity(0.9)))
-                ctx.stroke(triangle, with: .color(AppTheme.red), lineWidth: 1)
+                ctx.stroke(triangle, with: .color(AppTheme.red), lineWidth: 0.8)
             }
 
             // Selected: green pulse ring
             if isSelected {
-                let pr: CGFloat = 16
+                let pr: CGFloat = 9
                 let pulse = Path(ellipseIn: CGRect(x: center.x - pr, y: center.y - pr,
                                                     width: pr * 2, height: pr * 2))
                 ctx.fill(pulse, with: .color(AppTheme.green.opacity(0.20)))
-                ctx.stroke(pulse, with: .color(AppTheme.green), lineWidth: 2.5)
+                ctx.stroke(pulse, with: .color(AppTheme.green), lineWidth: 1.5)
 
-                let dr: CGFloat = 5
+                let dr: CGFloat = 3
                 let dot = Path(ellipseIn: CGRect(x: center.x - dr, y: center.y - dr,
                                                   width: dr * 2, height: dr * 2))
                 ctx.fill(dot, with: .color(AppTheme.green))
@@ -377,10 +377,10 @@ struct ReportHazardView: View {
 
             // Node label
             let label = Text(node.label.isEmpty ? "N?" : node.label)
-                .font(.system(size: 8, weight: .semibold))
+                .font(.system(size: 5, weight: .semibold))
                 .foregroundStyle(Color.white.opacity(0.85))
             ctx.draw(label, at: CGPoint(x: center.x,
-                                        y: center.y + (node.isExit ? 28 : 18)))
+                                        y: center.y + (node.isExit ? 16 : 11)))
         }
     }
 

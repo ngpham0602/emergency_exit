@@ -171,7 +171,7 @@ final class AppViewModel: ObservableObject {
                 let hadHazards = self.hasReportedHazards
                 self.hasReportedHazards = !hazards.isEmpty
 
-                // On employee devices: apply hazards from Firestore to local state
+                // On user devices: apply hazards from Firestore to local state
                 for h in hazards {
                     if let id = h["id"] as? String {
                         self.container.hazardStateManager.setHazardState(hazardID: id, isActive: true)

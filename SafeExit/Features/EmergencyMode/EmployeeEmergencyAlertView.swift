@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct EmployeeEmergencyAlertView: View {
+struct UserEmergencyAlertView: View {
     let alert: EmergencyAlert
     let onOpenMap: () -> Void
     @Environment(\.dismiss) private var dismiss
@@ -171,7 +171,7 @@ struct EmployeeEmergencyAlertView: View {
 }
 
 #Preview {
-    EmployeeEmergencyAlertView(
+    UserEmergencyAlertView(
         alert: EmergencyAlert(
             id: "preview",
             type: .fire,

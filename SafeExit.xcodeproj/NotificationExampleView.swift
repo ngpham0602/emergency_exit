@@ -9,7 +9,7 @@ import SwiftUI
 
 struct NotificationExampleView: View {
     @StateObject private var notificationManager = NotificationManager.shared
-    @State private var notificationTitle = "SafeExit Reminder"
+    @State private var notificationTitle = "Saferoute Reminder"
     @State private var notificationBody = "Don't forget to check in!"
     @State private var delaySeconds: Double = 10
     @State private var showingAlert = false
@@ -76,7 +76,7 @@ struct NotificationExampleView: View {
                             do {
                                 try await notificationManager.scheduleDailyNotification(
                                     title: "Good Morning!",
-                                    body: "Time to check your SafeExit status",
+                                    body: "Time to check your Saferoute status",
                                     hour: 9,
                                     minute: 0
                                 )

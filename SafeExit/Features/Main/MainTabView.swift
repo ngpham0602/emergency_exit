@@ -52,7 +52,7 @@ struct MainTabView: View {
                 if isSecurity {
                     securityContent
                 } else {
-                    employeeContent
+                    userContent
                 }
             }
             .environmentObject(floorPlanVM)
@@ -91,7 +91,7 @@ struct MainTabView: View {
                     .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
 
-                // Hazard banner — visible to BOTH security and employee
+                // Hazard banner — visible to BOTH security and user
                 if viewModel.hasReportedHazards && viewModel.activeEmergencyAlert == nil {
                     HStack(spacing: 10) {
                         Image(systemName: "exclamationmark.triangle.fill")
@@ -123,7 +123,7 @@ struct MainTabView: View {
                     .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
 
-                // Employee banner — alert received
+                // User banner — alert received
                 if !isSecurity, let alert = viewModel.activeEmergencyAlert {
                     Button { viewModel.showEmergencyAlert = true } label: {
                         HStack(spacing: 10) {
@@ -170,6 +170,22 @@ struct MainTabView: View {
         }
         .onAppear { viewModel.recomputeRoute() }
         .onChange(of: authVM.userRole) { _ in selectedTab = 0 }
+        .confirmationDialog("Stop Emergency Alert", isPresented: $confirmStopAlert, titleVisibility: .visible) {
+            Button("Stop Alert", role: .destructive) {
+                viewModel.stopEmergencyAlert()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This will stop the emergency alert for all users and clear all notifications.")
+        }
+        .confirmationDialog("Clear All Hazards", isPresented: $confirmStopHazard, titleVisibility: .visible) {
+            Button("Clear Hazards", role: .destructive) {
+                viewModel.stopAllHazards()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This will remove all reported hazards and recalculate safe routes.")
+        }
     }
 
     // MARK: - Role-specific content
@@ -187,7 +203,7 @@ struct MainTabView: View {
     }
 
     @ViewBuilder
-    private var employeeContent: some View {
+    private var userContent: some View {
         switch selectedTab {
         case 0: MapEditorView()
         case 1: RouteDetailView()

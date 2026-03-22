@@ -12,7 +12,7 @@ enum UserRole: String, Codable {
     var displayName: String {
         switch self {
         case .security: return "Security Officer"
-        case .employee: return "Employee"
+        case .employee: return "User"
         }
     }
 

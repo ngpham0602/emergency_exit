@@ -3,7 +3,7 @@ import Firebase
 
 
 @main
-struct SafeExitApp: App {
+struct SaferouteApp: App {
     // Wire up AppDelegate for APNs + FCM push notification support
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 

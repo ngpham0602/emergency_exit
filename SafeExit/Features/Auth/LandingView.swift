@@ -58,37 +58,47 @@ fileprivate struct WelcomeOnboardingView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Spacer()
+            Spacer().frame(height: 60)
 
+            // Logo
             ZStack {
-                RoundedRectangle(cornerRadius: 22)
+                RoundedRectangle(cornerRadius: 24)
                     .fill(Color.white)
-                    .frame(width: 92, height: 92)
+                    .frame(width: 88, height: 88)
                 Image(systemName: "shield.fill")
-                    .font(.system(size: 50))
+                    .font(.system(size: 44))
                     .foregroundStyle(AppTheme.bg)
             }
 
             Spacer().frame(height: 16)
 
-            Text("SAFEEXIT")
-                .font(.system(size: 13, weight: .bold, design: .monospaced))
-                .tracking(6)
-                .foregroundStyle(AppTheme.green)
+            // App name + green underline
+            VStack(spacing: 8) {
+                Text("SAFEROUTE")
+                    .font(.system(size: 14, weight: .black, design: .monospaced))
+                    .tracking(8)
+                    .foregroundStyle(AppTheme.green)
+                RoundedRectangle(cornerRadius: 1)
+                    .fill(AppTheme.green)
+                    .frame(width: 40, height: 3)
+            }
 
-            Spacer().frame(height: 36)
+            Spacer().frame(height: 28)
 
+            // Building graphic with floating badges
             BuildingGraphic()
-                .frame(width: 220, height: 150)
+                .frame(maxWidth: .infinity)
+                .frame(height: 280)
 
-            Spacer().frame(height: 32)
+            Spacer().frame(height: 28)
 
+            // Headline
             VStack(alignment: .leading, spacing: 2) {
                 Text("Your Safety,")
-                    .font(.system(size: 34, weight: .bold))
+                    .font(.system(size: 32, weight: .black))
                     .foregroundStyle(AppTheme.textPri)
                 Text("Optimized.")
-                    .font(.system(size: 34, weight: .bold))
+                    .font(.system(size: 32, weight: .black))
                     .foregroundStyle(AppTheme.green)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -96,34 +106,35 @@ fileprivate struct WelcomeOnboardingView: View {
 
             Spacer().frame(height: 10)
 
-            Text("Instant, recalculated evacuation paths\nthat adapt to real-time building hazards.")
+            Text("Instant, AI-recalculated evacuation paths\nthat adapt to real-time building hazards.")
                 .font(.system(size: 14))
                 .foregroundStyle(AppTheme.textSec)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .lineSpacing(4)
                 .padding(.horizontal, 28)
 
-            Spacer().frame(height: 24)
+            Spacer().frame(height: 20)
 
+            // Feature chips
             HStack(spacing: 8) {
-                LandingChip(icon: "map.fill",                    label: "LIVE MAP")
+                LandingChip(icon: "location.fill",               label: "LIVE MAP")
                 LandingChip(icon: "bolt.fill",                   label: "FAST EXIT")
-                LandingChip(icon: "dot.radiowaves.up.forward",   label: "SOS SYNC")
+                LandingChip(icon: "checkmark.shield.fill",       label: "SOS SYNC")
             }
             .padding(.horizontal, 28)
 
             Spacer()
 
+            // Get Started button
             Button { flow = .rolePicker } label: {
-                HStack {
-                    Text("Create Account")
-                        .font(.system(size: 16, weight: .bold))
-                    Spacer()
+                HStack(spacing: 8) {
+                    Text("Get Started")
+                        .font(.system(size: 17, weight: .bold))
                     Image(systemName: "arrow.right")
                         .font(.system(size: 15, weight: .bold))
                 }
                 .foregroundStyle(AppTheme.bg)
-                .padding(.horizontal, 22)
+                .frame(maxWidth: .infinity)
                 .padding(.vertical, 18)
                 .background(AppTheme.green)
                 .clipShape(RoundedRectangle(cornerRadius: 14))
@@ -186,7 +197,7 @@ fileprivate struct RolePickerView: View {
                 RoleCard(
                     role: .security,
                     title: "Security Officer",
-                    subtitle: "Manage hazards, control evacuations\nand monitor all building activity.",
+                    subtitle: "Manage hazards, control evacuations and monitor all building activity.",
                     accentColor: AppTheme.amber,
                     icon: "shield.checkered"
                 ) {
@@ -195,8 +206,8 @@ fileprivate struct RolePickerView: View {
 
                 RoleCard(
                     role: .employee,
-                    title: "Employee",
-                    subtitle: "Get real-time evacuation guidance\nand report hazards as you see them.",
+                    title: "User",
+                    subtitle: "Get real-time evacuation guidance and report hazards as you see them.",
                     accentColor: AppTheme.green,
                     icon: "person.fill"
                 ) {
@@ -232,7 +243,7 @@ private struct RoleCard: View {
 
     var body: some View {
         Button(action: onTap) {
-            HStack(spacing: 18) {
+            HStack(spacing: 16) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 14)
                         .fill(accentColor.opacity(0.15))
@@ -242,24 +253,25 @@ private struct RoleCard: View {
                         .foregroundStyle(accentColor)
                 }
 
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 6) {
                     Text(title)
-                        .font(.system(size: 17, weight: .bold))
+                        .font(.system(size: 18, weight: .bold))
                         .foregroundStyle(AppTheme.textPri)
                     Text(subtitle)
                         .font(.system(size: 13))
                         .foregroundStyle(AppTheme.textSec)
                         .fixedSize(horizontal: false, vertical: true)
-                        .lineSpacing(2)
+                        .lineSpacing(3)
+                        .multilineTextAlignment(.leading)
                 }
-
-                Spacer()
+                .frame(maxWidth: .infinity, alignment: .leading)
 
                 Image(systemName: "chevron.right")
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(AppTheme.textDim)
             }
-            .padding(18)
+            .padding(20)
+            .frame(maxWidth: .infinity, minHeight: 100)
             .background(AppTheme.cardBg)
             .clipShape(RoundedRectangle(cornerRadius: 16))
             .overlay(
@@ -458,7 +470,7 @@ fileprivate struct SignInView: View {
 
             Spacer().frame(height: 12)
 
-            Text("SAFEEXIT")
+            Text("SAFEROUTE")
                 .font(.system(size: 13, weight: .bold, design: .monospaced))
                 .tracking(6)
                 .foregroundStyle(AppTheme.textPri)
@@ -637,19 +649,20 @@ private struct LandingChip: View {
     let label: String
 
     var body: some View {
-        HStack(spacing: 5) {
+        HStack(spacing: 6) {
             Image(systemName: icon)
-                .font(.system(size: 10, weight: .bold))
+                .font(.system(size: 11, weight: .bold))
+                .foregroundStyle(AppTheme.green)
             Text(label)
                 .font(.system(size: 10, weight: .bold, design: .monospaced))
                 .tracking(0.5)
+                .foregroundStyle(AppTheme.textPri)
         }
-        .foregroundStyle(AppTheme.textSec)
-        .padding(.horizontal, 11)
-        .padding(.vertical, 7)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 9)
         .background(AppTheme.cardBg)
         .clipShape(Capsule())
-        .overlay(Capsule().stroke(AppTheme.border, lineWidth: 1))
+        .overlay(Capsule().stroke(AppTheme.green.opacity(0.25), lineWidth: 1))
     }
 }
 
@@ -658,69 +671,57 @@ private struct LandingChip: View {
 private struct BuildingGraphic: View {
     var body: some View {
         ZStack {
-            Circle().stroke(AppTheme.green.opacity(0.06), lineWidth: 50).frame(width: 120)
-            Circle().stroke(AppTheme.green.opacity(0.04), lineWidth: 30).frame(width: 170)
+            // Concentric circle rings
+            Circle()
+                .stroke(AppTheme.green.opacity(0.06), lineWidth: 1)
+                .frame(width: 300, height: 300)
+            Circle()
+                .stroke(AppTheme.green.opacity(0.05), lineWidth: 1)
+                .frame(width: 220, height: 220)
 
-            Canvas { ctx, size in
-                let w = size.width, h = size.height
-                let cx = w * 0.5, cy = h * 0.52
-                let isoW: CGFloat = 80, isoH: CGFloat = 55, depth: CGFloat = 30
+            // Dark radial gradient background
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [Color(white: 0.12), Color.clear],
+                        center: .center,
+                        startRadius: 20,
+                        endRadius: 150
+                    )
+                )
+                .frame(width: 300, height: 300)
 
-                let top = Path { p in
-                    p.move(to:    CGPoint(x: cx,        y: cy - isoH * 0.5))
-                    p.addLine(to: CGPoint(x: cx + isoW, y: cy - isoH * 0.5 + depth * 0.4))
-                    p.addLine(to: CGPoint(x: cx,        y: cy - isoH * 0.5 + depth * 0.8))
-                    p.addLine(to: CGPoint(x: cx - isoW, y: cy - isoH * 0.5 + depth * 0.4))
-                    p.closeSubpath()
-                }
-                ctx.fill(top, with: .color(Color(white: 0.20)))
+            // Building image (drop your 3D building PNG into Assets > building_3d)
+            Image("building_3d")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 240, height: 180)
 
-                let right = Path { p in
-                    p.move(to:    CGPoint(x: cx + isoW, y: cy - isoH * 0.5 + depth * 0.4))
-                    p.addLine(to: CGPoint(x: cx + isoW, y: cy + isoH * 0.5 + depth * 0.4))
-                    p.addLine(to: CGPoint(x: cx,        y: cy + isoH * 0.5 + depth * 0.8))
-                    p.addLine(to: CGPoint(x: cx,        y: cy - isoH * 0.5 + depth * 0.8))
-                    p.closeSubpath()
-                }
-                ctx.fill(right, with: .color(Color(white: 0.10)))
-
-                let left = Path { p in
-                    p.move(to:    CGPoint(x: cx - isoW, y: cy - isoH * 0.5 + depth * 0.4))
-                    p.addLine(to: CGPoint(x: cx - isoW, y: cy + isoH * 0.5 + depth * 0.4))
-                    p.addLine(to: CGPoint(x: cx,        y: cy + isoH * 0.5 + depth * 0.8))
-                    p.addLine(to: CGPoint(x: cx,        y: cy - isoH * 0.5 + depth * 0.8))
-                    p.closeSubpath()
-                }
-                ctx.fill(left, with: .color(Color(white: 0.14)))
-
-                let green = Color(red: 0.22, green: 0.96, blue: 0.29)
-                for row in 0..<3 {
-                    for col in 0..<2 {
-                        let wx = cx + 14 + CGFloat(col) * 26
-                        let wy = cy - 10 + CGFloat(row) * 20
-                        ctx.fill(Path(CGRect(x: wx, y: wy, width: 10, height: 13)),
-                                 with: .color(green.opacity(col == 0 && row == 1 ? 0.9 : 0.3)))
-                    }
-                }
-                for row in 0..<3 {
-                    ctx.fill(Path(CGRect(x: cx - 36, y: cy - 10 + CGFloat(row) * 20, width: 10, height: 13)),
-                             with: .color(Color(white: 0.25)))
-                }
-
-                let edge = Color(red: 0.3, green: 0.6, blue: 1.0).opacity(0.35)
-                let style = StrokeStyle(lineWidth: 0.8)
-                ctx.stroke(top, with: .color(edge), style: style)
-                ctx.stroke(right, with: .color(edge), style: style)
-                ctx.stroke(left, with: .color(edge), style: style)
-            }
-
-            Image(systemName: "mappin.circle.fill")
-                .font(.system(size: 20)).foregroundStyle(AppTheme.green).offset(x: 72, y: -40)
-            Image(systemName: "shield.fill")
-                .font(.system(size: 16)).foregroundStyle(AppTheme.textDim).offset(x: -72, y: 22)
-            Image(systemName: "bolt.fill")
-                .font(.system(size: 16)).foregroundStyle(AppTheme.textDim).offset(x: 74, y: 18)
+            // Floating icon badges
+            FloatingBadge(icon: "location.fill")
+                .offset(x: 100, y: -60)
+            FloatingBadge(icon: "bolt.fill")
+                .offset(x: 110, y: 40)
+            FloatingBadge(icon: "checkmark.shield.fill")
+                .offset(x: -100, y: 60)
         }
+    }
+}
+
+private struct FloatingBadge: View {
+    let icon: String
+
+    var body: some View {
+        Image(systemName: icon)
+            .font(.system(size: 18, weight: .semibold))
+            .foregroundStyle(AppTheme.green)
+            .frame(width: 44, height: 44)
+            .background(AppTheme.cardBg)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(AppTheme.green.opacity(0.2), lineWidth: 1)
+            )
     }
 }
 

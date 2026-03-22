@@ -59,7 +59,7 @@ final class EmergencyNotificationManager: NSObject, UNUserNotificationCenterDele
     func fireEmergencyNotification(type: EmergencyType) {
         let content = UNMutableNotificationContent()
         content.title = type.notificationTitle
-        content.subtitle = "SafeExit Emergency"
+        content.subtitle = "Saferoute Emergency"
         content.body = type.shortInstruction
         content.categoryIdentifier = Self.emergencyCategoryID
         content.userInfo = ["emergencyType": type.rawValue]
