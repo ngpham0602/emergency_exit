@@ -7,6 +7,16 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1B2948128303306AC0EDB1FD /* EmployeeEmergencyAlertView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43F44F7C91C941F463B0F468 /* EmployeeEmergencyAlertView.swift */; };
+		2E7187992F6EACA10000D817 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 2E7187982F6EACA10000D817 /* FirebaseAuth */; };
+		2E71879B2F6EACA10000D817 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 2E71879A2F6EACA10000D817 /* FirebaseFirestore */; };
+		2E71879D2F6EACA10000D817 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = 2E71879C2F6EACA10000D817 /* FirebaseStorage */; };
+		2E71879F2F6EAD670000D817 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 2E71879E2F6EAD660000D817 /* GoogleService-Info.plist */; };
+		2E7187A12F6EACA10000D817 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 2E7187A02F6EACA10000D817 /* FirebaseMessaging */; };
+		4F7045449A36ADA4B964322D /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE994DA08B5E20E1526F1CE8 /* AppDelegate.swift */; };
+		604D4E0AB936E2BBAF86107C /* EmergencyNotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79214F0691A7C550AF45C5FE /* EmergencyNotificationManager.swift */; };
+		923D44A2A28D83208BFCD99E /* EmergencyAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7464E8B987D68EB8EF59440 /* EmergencyAlert.swift */; };
+		931F42C19EB00C599465E019 /* SendEmergencyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4640462897316FDF36B5E48A /* SendEmergencyView.swift */; };
 		A00000000000000000000101 /* SafeExitApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000201 /* SafeExitApp.swift */; };
 		A00000000000000000000102 /* AppContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000202 /* AppContainer.swift */; };
 		A00000000000000000000103 /* AppViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000203 /* AppViewModel.swift */; };
@@ -36,6 +46,7 @@
 		A00000000000000000000127 /* ReportHazardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000226 /* ReportHazardView.swift */; };
 		A00000000000000000000128 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000227 /* ProfileView.swift */; };
 		A00000000000000000000129 /* EmergencyActiveView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000228 /* EmergencyActiveView.swift */; };
+<<<<<<< HEAD
 		A00000000000000000000130 /* Building.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000230 /* Building.swift */; };
 		A00000000000000000000131 /* Floor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000231 /* Floor.swift */; };
 		A00000000000000000000132 /* MapNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000232 /* MapNode.swift */; };
@@ -49,6 +60,18 @@
 		C51296042F6EA77C008DF409 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = C51296032F6EA77C008DF409 /* GoogleService-Info.plist */; };
 		C51296052F6EA77C008DF409 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = C51296032F6EA77C008DF409 /* GoogleService-Info.plist */; };
 		C51296072F6EA8E4008DF409 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = C51296062F6EA8E4008DF409 /* GoogleService-Info.plist */; };
+=======
+		A0000000000000000000012A /* FloorPlanLibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000229 /* FloorPlanLibraryView.swift */; };
+		A0000000000000000000012B /* Building.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000022A /* Building.swift */; };
+		A0000000000000000000012C /* Floor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000022B /* Floor.swift */; };
+		A0000000000000000000012D /* Hazard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000022C /* Hazard.swift */; };
+		A0000000000000000000012E /* MapEdge.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000022D /* MapEdge.swift */; };
+		A0000000000000000000012F /* MapNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000022E /* MapNode.swift */; };
+		A00000000000000000000130 /* FirestoreService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000022F /* FirestoreService.swift */; };
+		A00000000000000000000131 /* DesignConceptsPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000230 /* DesignConceptsPreview.swift */; };
+		A00000000000000000000132 /* FirebaseTestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000231 /* FirebaseTestView.swift */; };
+		A00000000000000000000133 /* MapEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000232 /* MapEditorView.swift */; };
+>>>>>>> Anotherone
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -62,6 +85,10 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		2E71879E2F6EAD660000D817 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+		43F44F7C91C941F463B0F468 /* EmployeeEmergencyAlertView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = EmployeeEmergencyAlertView.swift; path = SafeExit/Features/EmergencyMode/EmployeeEmergencyAlertView.swift; sourceTree = SOURCE_ROOT; };
+		4640462897316FDF36B5E48A /* SendEmergencyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SendEmergencyView.swift; path = SafeExit/Features/EmergencyMode/SendEmergencyView.swift; sourceTree = SOURCE_ROOT; };
+		79214F0691A7C550AF45C5FE /* EmergencyNotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = EmergencyNotificationManager.swift; path = SafeExit/Core/Services/EmergencyNotificationManager.swift; sourceTree = SOURCE_ROOT; };
 		A00000000000000000000201 /* SafeExitApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafeExitApp.swift; sourceTree = "<group>"; };
 		A00000000000000000000202 /* AppContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppContainer.swift; sourceTree = "<group>"; };
 		A00000000000000000000203 /* AppViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppViewModel.swift; sourceTree = "<group>"; };
@@ -90,6 +117,7 @@
 		A00000000000000000000226 /* ReportHazardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportHazardView.swift; sourceTree = "<group>"; };
 		A00000000000000000000227 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
 		A00000000000000000000228 /* EmergencyActiveView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmergencyActiveView.swift; sourceTree = "<group>"; };
+<<<<<<< HEAD
 		A00000000000000000000230 /* Building.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Building.swift; sourceTree = "<group>"; };
 		A00000000000000000000231 /* Floor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Floor.swift; sourceTree = "<group>"; };
 		A00000000000000000000232 /* MapNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapNode.swift; sourceTree = "<group>"; };
@@ -101,6 +129,22 @@
 		A00000000000000000000402 /* SafeExitTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SafeExitTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		C51296032F6EA77C008DF409 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		C51296062F6EA8E4008DF409 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+=======
+		A00000000000000000000229 /* FloorPlanLibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloorPlanLibraryView.swift; sourceTree = "<group>"; };
+		A0000000000000000000022A /* Building.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Building.swift; sourceTree = "<group>"; };
+		A0000000000000000000022B /* Floor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Floor.swift; sourceTree = "<group>"; };
+		A0000000000000000000022C /* Hazard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Hazard.swift; sourceTree = "<group>"; };
+		A0000000000000000000022D /* MapEdge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapEdge.swift; sourceTree = "<group>"; };
+		A0000000000000000000022E /* MapNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapNode.swift; sourceTree = "<group>"; };
+		A0000000000000000000022F /* FirestoreService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirestoreService.swift; sourceTree = "<group>"; };
+		A00000000000000000000230 /* DesignConceptsPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignConceptsPreview.swift; sourceTree = "<group>"; };
+		A00000000000000000000231 /* FirebaseTestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirebaseTestView.swift; sourceTree = "<group>"; };
+		A00000000000000000000232 /* MapEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapEditorView.swift; sourceTree = "<group>"; };
+		A00000000000000000000401 /* SafeExit.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SafeExit.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A00000000000000000000402 /* SafeExitTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SafeExitTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		CE994DA08B5E20E1526F1CE8 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = SafeExit/App/AppDelegate.swift; sourceTree = SOURCE_ROOT; };
+		F7464E8B987D68EB8EF59440 /* EmergencyAlert.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = EmergencyAlert.swift; path = SafeExit/Core/Models/EmergencyAlert.swift; sourceTree = SOURCE_ROOT; };
+>>>>>>> Anotherone
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -108,9 +152,16 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+<<<<<<< HEAD
 				C51295FE2F6EA5B9008DF409 /* FirebaseAuth in Frameworks */,
 				C51296002F6EA5B9008DF409 /* FirebaseFirestore in Frameworks */,
 				C51296022F6EA5B9008DF409 /* FirebaseStorage in Frameworks */,
+=======
+				2E7187992F6EACA10000D817 /* FirebaseAuth in Frameworks */,
+				2E71879B2F6EACA10000D817 /* FirebaseFirestore in Frameworks */,
+				2E71879D2F6EACA10000D817 /* FirebaseStorage in Frameworks */,
+				2E7187A12F6EACA10000D817 /* FirebaseMessaging in Frameworks */,
+>>>>>>> Anotherone
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -130,6 +181,11 @@
 				A00000000000000000000602 /* SafeExit */,
 				A00000000000000000000603 /* SafeExitTests */,
 				A00000000000000000000604 /* Products */,
+				F7464E8B987D68EB8EF59440 /* EmergencyAlert.swift */,
+				79214F0691A7C550AF45C5FE /* EmergencyNotificationManager.swift */,
+				4640462897316FDF36B5E48A /* SendEmergencyView.swift */,
+				43F44F7C91C941F463B0F468 /* EmployeeEmergencyAlertView.swift */,
+				CE994DA08B5E20E1526F1CE8 /* AppDelegate.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -189,6 +245,8 @@
 				A00000000000000000000622 /* Route */,
 				A00000000000000000000623 /* Hazard */,
 				A00000000000000000000624 /* Profile */,
+				A00000000000000000000625 /* FloorPlanLibrary */,
+				A00000000000000000000626 /* DesignPreview */,
 			);
 			path = Features;
 			sourceTree = "<group>";
@@ -208,8 +266,12 @@
 			children = (
 				A00000000000000000000617 /* BuildingPackages */,
 				A00000000000000000000618 /* QRSeeds */,
+<<<<<<< HEAD
 				C51296032F6EA77C008DF409 /* GoogleService-Info.plist */,
 				C51296062F6EA8E4008DF409 /* GoogleService-Info.plist */,
+=======
+				2E71879E2F6EAD660000D817 /* GoogleService-Info.plist */,
+>>>>>>> Anotherone
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -261,11 +323,19 @@
 				A00000000000000000000205 /* BuildingPackage.swift */,
 				A00000000000000000000206 /* HazardModels.swift */,
 				A00000000000000000000207 /* RouteModels.swift */,
+<<<<<<< HEAD
 				A00000000000000000000230 /* Building.swift */,
 				A00000000000000000000231 /* Floor.swift */,
 				A00000000000000000000232 /* MapNode.swift */,
 				A00000000000000000000233 /* MapEdge.swift */,
 				A00000000000000000000234 /* Hazard.swift */,
+=======
+				A0000000000000000000022A /* Building.swift */,
+				A0000000000000000000022B /* Floor.swift */,
+				A0000000000000000000022C /* Hazard.swift */,
+				A0000000000000000000022D /* MapEdge.swift */,
+				A0000000000000000000022E /* MapNode.swift */,
+>>>>>>> Anotherone
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -283,7 +353,11 @@
 			children = (
 				A00000000000000000000209 /* BuildingPackageRepository.swift */,
 				A00000000000000000000210 /* HazardStateManager.swift */,
+<<<<<<< HEAD
 				A00000000000000000000235 /* FirestoreService.swift */,
+=======
+				A0000000000000000000022F /* FirestoreService.swift */,
+>>>>>>> Anotherone
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -316,7 +390,11 @@
 			isa = PBXGroup;
 			children = (
 				A00000000000000000000223 /* MainTabView.swift */,
+<<<<<<< HEAD
 				A00000000000000000000236 /* FirebaseTestView.swift */,
+=======
+				A00000000000000000000231 /* FirebaseTestView.swift */,
+>>>>>>> Anotherone
 			);
 			path = Main;
 			sourceTree = "<group>";
@@ -325,6 +403,7 @@
 			isa = PBXGroup;
 			children = (
 				A00000000000000000000224 /* LiveMapView.swift */,
+				A00000000000000000000232 /* MapEditorView.swift */,
 			);
 			path = Map;
 			sourceTree = "<group>";
@@ -351,6 +430,22 @@
 				A00000000000000000000227 /* ProfileView.swift */,
 			);
 			path = Profile;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000625 /* FloorPlanLibrary */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000229 /* FloorPlanLibraryView.swift */,
+			);
+			path = FloorPlanLibrary;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000626 /* DesignPreview */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000230 /* DesignConceptsPreview.swift */,
+			);
+			path = DesignPreview;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -420,7 +515,11 @@
 			);
 			mainGroup = A00000000000000000000601;
 			packageReferences = (
+<<<<<<< HEAD
 				C51295FC2F6EA5B9008DF409 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+=======
+				2E7187972F6EACA10000D817 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+>>>>>>> Anotherone
 			);
 			productRefGroup = A00000000000000000000604 /* Products */;
 			projectDirPath = "";
@@ -438,8 +537,12 @@
 			buildActionMask = 2147483647;
 			files = (
 				A00000000000000000000116 /* Assets.xcassets in Resources */,
+<<<<<<< HEAD
 				C51296042F6EA77C008DF409 /* GoogleService-Info.plist in Resources */,
 				C51296072F6EA8E4008DF409 /* GoogleService-Info.plist in Resources */,
+=======
+				2E71879F2F6EAD670000D817 /* GoogleService-Info.plist in Resources */,
+>>>>>>> Anotherone
 				A00000000000000000000117 /* demo_building.json in Resources */,
 				A00000000000000000000118 /* qr_seeds.json in Resources */,
 			);
@@ -485,6 +588,7 @@
 				A00000000000000000000127 /* ReportHazardView.swift in Sources */,
 				A00000000000000000000128 /* ProfileView.swift in Sources */,
 				A00000000000000000000129 /* EmergencyActiveView.swift in Sources */,
+<<<<<<< HEAD
 				A00000000000000000000130 /* Building.swift in Sources */,
 				A00000000000000000000131 /* Floor.swift in Sources */,
 				A00000000000000000000132 /* MapNode.swift in Sources */,
@@ -492,6 +596,23 @@
 				A00000000000000000000134 /* Hazard.swift in Sources */,
 				A00000000000000000000135 /* FirestoreService.swift in Sources */,
 				A00000000000000000000136 /* FirebaseTestView.swift in Sources */,
+=======
+				A0000000000000000000012A /* FloorPlanLibraryView.swift in Sources */,
+				A0000000000000000000012B /* Building.swift in Sources */,
+				A0000000000000000000012C /* Floor.swift in Sources */,
+				A0000000000000000000012D /* Hazard.swift in Sources */,
+				A0000000000000000000012E /* MapEdge.swift in Sources */,
+				A0000000000000000000012F /* MapNode.swift in Sources */,
+				A00000000000000000000130 /* FirestoreService.swift in Sources */,
+				A00000000000000000000131 /* DesignConceptsPreview.swift in Sources */,
+				A00000000000000000000132 /* FirebaseTestView.swift in Sources */,
+				A00000000000000000000133 /* MapEditorView.swift in Sources */,
+				923D44A2A28D83208BFCD99E /* EmergencyAlert.swift in Sources */,
+				604D4E0AB936E2BBAF86107C /* EmergencyNotificationManager.swift in Sources */,
+				931F42C19EB00C599465E019 /* SendEmergencyView.swift in Sources */,
+				1B2948128303306AC0EDB1FD /* EmployeeEmergencyAlertView.swift in Sources */,
+				4F7045449A36ADA4B964322D /* AppDelegate.swift in Sources */,
+>>>>>>> Anotherone
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -732,7 +853,11 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+<<<<<<< HEAD
 		C51295FC2F6EA5B9008DF409 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+=======
+		2E7187972F6EACA10000D817 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+>>>>>>> Anotherone
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
 			requirement = {
@@ -743,6 +868,7 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+<<<<<<< HEAD
 		C51295FD2F6EA5B9008DF409 /* FirebaseAuth */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = C51295FC2F6EA5B9008DF409 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
@@ -758,6 +884,28 @@
 			package = C51295FC2F6EA5B9008DF409 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseStorage;
 		};
+=======
+		2E7187982F6EACA10000D817 /* FirebaseAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2E7187972F6EACA10000D817 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAuth;
+		};
+		2E71879A2F6EACA10000D817 /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2E7187972F6EACA10000D817 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestore;
+		};
+		2E71879C2F6EACA10000D817 /* FirebaseStorage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2E7187972F6EACA10000D817 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseStorage;
+		};
+		2E7187A02F6EACA10000D817 /* FirebaseMessaging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2E7187972F6EACA10000D817 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseMessaging;
+		};
+>>>>>>> Anotherone
 /* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = A00000000000000000000001 /* Project object */;

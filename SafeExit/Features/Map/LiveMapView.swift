@@ -1,8 +1,42 @@
 import SwiftUI
 
+// MARK: - Shared coordinate mapper (used by canvas drawing AND tap detection)
+
+func mapNodeToPoint(_ coords: Coordinates, in canvasSize: CGSize) -> CGPoint {
+    let minX = 2.0, maxX = 63.0, minY = 1.0, maxY = 29.0, padding = 28.0
+    let usableW = canvasSize.width  - padding * 2
+    let usableH = canvasSize.height - padding * 2
+    let x = padding + ((coords.x - minX) / (maxX - minX)) * usableW
+    let y = padding + ((coords.y - minY) / (maxY - minY)) * usableH
+    return CGPoint(x: x, y: y)
+}
+
+// MARK: - Map interaction mode
+
+private enum MapMode {
+    case myLocation   // tap a node → set as start
+    case danger       // tap a node → open hazard picker
+}
+
+// MARK: - Sheet state
+
+private enum MapSheet: Identifiable {
+    case hazardPicker(Node)
+
+    var id: String {
+        switch self {
+        case .hazardPicker(let n): return "hazard-\(n.id)"
+        }
+    }
+}
+
+// MARK: - LiveMapView
+
 struct LiveMapView: View {
     @EnvironmentObject private var viewModel: AppViewModel
-    @State private var showLocationPicker = false
+    @EnvironmentObject private var floorPlanVM: FloorPlanLibraryViewModel
+    @State private var activeSheet: MapSheet?
+    @State private var mapMode: MapMode = .myLocation
 
     var body: some View {
         ZStack {
@@ -41,6 +75,9 @@ struct LiveMapView: View {
 
                 // Map canvas
                 GeometryReader { geo in
+                    let canvasH = geo.size.height - 90
+                    let canvasSize = CGSize(width: geo.size.width, height: canvasH)
+
                     ZStack(alignment: .bottomLeading) {
                         // Floor plan
                         FloorPlanCanvas(
@@ -48,41 +85,75 @@ struct LiveMapView: View {
                             routePath: viewModel.routeResult?.path ?? [],
                             activeHazards: viewModel.activeHazards,
                             selectedNodeID: viewModel.selectedStartNodeID,
-                            canvasSize: CGSize(width: geo.size.width, height: geo.size.height - 90)
+                            canvasSize: canvasSize,
+                            mapImage: floorPlanVM.activeMapImage
                         )
-                        .frame(width: geo.size.width, height: geo.size.height - 90)
+                        .frame(width: geo.size.width, height: canvasH)
                         .background(AppTheme.cardBg)
 
-                        // Map controls (right side)
-                        VStack(spacing: 8) {
-                            MapControlButton(icon: "location.fill") {}
-                            MapControlButton(icon: "arrow.up.left.and.down.right.magnifyingglass") {}
+                        // Tap detection layer
+                        Color.clear
+                            .contentShape(Rectangle())
+                            .frame(width: geo.size.width, height: canvasH)
+                            .gesture(
+                                DragGesture(minimumDistance: 0)
+                                    .onEnded { value in
+                                        guard let node = nearestNode(
+                                            to: value.location,
+                                            in: viewModel.buildingPackage,
+                                            canvasSize: canvasSize,
+                                            threshold: 36
+                                        ) else { return }
+                                        switch mapMode {
+                                        case .myLocation:
+                                            viewModel.selectStartNode(node.id)
+                                        case .danger:
+                                            activeSheet = .hazardPicker(node)
+                                        }
+                                    }
+                            )
+
+                        // Mode toggle bar (bottom-centre)
+                        HStack(spacing: 0) {
+                            ModeButton(
+                                icon: "person.fill",
+                                label: "I'm Here",
+                                active: mapMode == .myLocation,
+                                color: AppTheme.green
+                            ) { mapMode = .myLocation }
+
+                            ModeButton(
+                                icon: "exclamationmark.triangle.fill",
+                                label: "Danger Here",
+                                active: mapMode == .danger,
+                                color: AppTheme.red
+                            ) { mapMode = .danger }
                         }
-                        .frame(maxWidth: .infinity, alignment: .trailing)
-                        .padding(.trailing, 16)
+                        .background(AppTheme.cardBg2)
+                        .clipShape(Capsule())
+                        .overlay(Capsule().stroke(AppTheme.border, lineWidth: 1))
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.horizontal, 60)
                         .padding(.bottom, 16)
 
-                        // Location selector button (bottom-left)
-                        Button { showLocationPicker = true } label: {
-                            HStack(spacing: 6) {
-                                Image(systemName: "circle.fill")
-                                    .font(.system(size: 8))
-                                    .foregroundStyle(AppTheme.green)
-                                Text(viewModel.currentStartNode?.name ?? "Select Location")
-                                    .font(.system(size: 12, weight: .semibold))
-                                    .foregroundStyle(AppTheme.textPri)
-                                Image(systemName: "chevron.up")
-                                    .font(.system(size: 10, weight: .bold))
+                        // "No map set" hint when no active map
+                        if floorPlanVM.activeMapImage == nil {
+                            VStack(spacing: 6) {
+                                Image(systemName: "building.2")
+                                    .font(.system(size: 22))
+                                    .foregroundStyle(AppTheme.textDim)
+                                Text("No active floor plan")
+                                    .font(.system(size: 13, weight: .semibold))
                                     .foregroundStyle(AppTheme.textSec)
+                                Text("Import one in the Plans tab and set it as Live")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(AppTheme.textDim)
+                                    .multilineTextAlignment(.center)
                             }
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 8)
-                            .background(AppTheme.cardBg2)
-                            .clipShape(Capsule())
-                            .overlay(Capsule().stroke(AppTheme.border, lineWidth: 1))
+                            .padding(.horizontal, 40)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                            .allowsHitTesting(false)
                         }
-                        .padding(.leading, 16)
-                        .padding(.bottom, 16)
                     }
                 }
 
@@ -140,34 +211,51 @@ struct LiveMapView: View {
                 }
             }
         }
-        .sheet(isPresented: $showLocationPicker) {
-            LocationPickerSheet()
-                .presentationDetents([.fraction(0.45)])
-                .presentationBackground(AppTheme.cardBg)
+        .sheet(item: $activeSheet) { sheet in
+            switch sheet {
+            case .hazardPicker(let node):
+                NodeHazardSheet(node: node)
+                    .presentationDetents([.height(380)])
+                    .presentationBackground(AppTheme.cardBg)
+                    .presentationDragIndicator(.visible)
+            }
         }
+    }
+
+    // Find the node closest to a tap point within `threshold` points.
+    private func nearestNode(
+        to point: CGPoint,
+        in building: BuildingPackage?,
+        canvasSize: CGSize,
+        threshold: CGFloat
+    ) -> Node? {
+        guard let building else { return nil }
+        var closest: Node?
+        var closestDist = threshold
+        for node in building.nodes {
+            let nodePt = mapNodeToPoint(node.coordinates, in: canvasSize)
+            let dist = hypot(nodePt.x - point.x, nodePt.y - point.y)
+            if dist < closestDist {
+                closestDist = dist
+                closest = node
+            }
+        }
+        return closest
     }
 }
 
 // MARK: - Canvas floor plan
 
-private struct FloorPlanCanvas: View {
+struct FloorPlanCanvas: View {
     let building: BuildingPackage?
     let routePath: [Node]
     let activeHazards: [HazardEvent]
     let selectedNodeID: String?
     let canvasSize: CGSize
-
-    // Coordinate space from JSON: x 4..60, y 4..26
-    private let minX = 2.0, maxX = 63.0
-    private let minY = 1.0, maxY = 29.0
-    private let padding = 28.0
+    let mapImage: UIImage?
 
     private func pt(_ coords: Coordinates) -> CGPoint {
-        let usableW = canvasSize.width  - padding * 2
-        let usableH = canvasSize.height - padding * 2
-        let x = padding + ((coords.x - minX) / (maxX - minX)) * usableW
-        let y = padding + ((coords.y - minY) / (maxY - minY)) * usableH
-        return CGPoint(x: x, y: y)
+        mapNodeToPoint(coords, in: canvasSize)
     }
 
     private var hazardNodeIDs: Set<String> {
@@ -190,244 +278,391 @@ private struct FloorPlanCanvas: View {
     }
 
     var body: some View {
-        Canvas { ctx, size in
-            guard let building else {
-                // Empty state
-                let label = Text("Loading map…")
-                    .font(.system(size: 14))
-                    .foregroundStyle(Color.white.opacity(0.3))
-                ctx.draw(label, at: CGPoint(x: size.width/2, y: size.height/2))
-                return
+        ZStack {
+            // Building map photo — higher opacity so floor plan is clearly visible
+            if let img = mapImage {
+                Image(uiImage: img)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: canvasSize.width, height: canvasSize.height)
+                    .clipped()
+                    .opacity(0.65)
             }
 
-            let nodeMap = Dictionary(uniqueKeysWithValues: building.nodes.map { ($0.id, $0) })
-
-            // --- Building outline ---
-            let outlineRect = CGRect(
-                x: padding * 0.4, y: padding * 0.4,
-                width: size.width - padding * 0.8,
-                height: size.height - padding * 0.8
-            )
-            ctx.fill(Path(outlineRect), with: .color(Color(white: 0.06)))
-            ctx.stroke(Path(outlineRect),
-                       with: .color(Color(white: 0.18)),
-                       style: StrokeStyle(lineWidth: 1.5))
-
-            // --- Draw edges ---
-            for edge in building.edges {
-                guard let fromNode = nodeMap[edge.fromNodeID],
-                      let toNode   = nodeMap[edge.toNodeID] else { continue }
-
-                let fromPt = pt(fromNode.coordinates)
-                let toPt   = pt(toNode.coordinates)
-
-                let isPath    = isOnPath(edge)
-                let isHazard  = hazardEdgeIDs.contains(edge.id)
-
-                var edgePath = Path()
-                edgePath.move(to: fromPt)
-                edgePath.addLine(to: toPt)
-
-                if isPath {
-                    ctx.stroke(edgePath,
-                               with: .color(Color(red: 0.22, green: 0.96, blue: 0.29)),
-                               style: StrokeStyle(
-                                lineWidth: 2.5,
-                                lineCap: .round,
-                                dash: [7, 5]))
-                } else if isHazard {
-                    ctx.stroke(edgePath,
-                               with: .color(Color(red: 0.90, green: 0.25, blue: 0.25).opacity(0.5)),
-                               style: StrokeStyle(lineWidth: 1.5))
-                } else {
-                    ctx.stroke(edgePath,
-                               with: .color(Color(white: 0.25)),
-                               style: StrokeStyle(lineWidth: 1.0))
+            Canvas { ctx, size in
+                guard let building else {
+                    let label = Text("Loading map…")
+                        .font(.system(size: 14))
+                        .foregroundStyle(Color.white.opacity(0.3))
+                    ctx.draw(label, at: CGPoint(x: size.width/2, y: size.height/2))
+                    return
                 }
-            }
 
-            // --- Draw nodes ---
-            for node in building.nodes {
-                let center = pt(node.coordinates)
-                let isHazard   = hazardNodeIDs.contains(node.id)
-                let isSelected = node.id == selectedNodeID
-                let isOnRoute  = routeNodeIDs.contains(node.id)
+                let nodeMap = Dictionary(uniqueKeysWithValues: building.nodes.map { ($0.id, $0) })
 
-                switch node.type {
-                case .room:
-                    let r: CGFloat = 10
-                    let rect = CGRect(x: center.x - r, y: center.y - r, width: r * 2, height: r * 2)
-                    ctx.fill(Path(roundedRect: rect, cornerRadius: 3),
-                             with: .color(isSelected ? Color(red: 0.22, green: 0.96, blue: 0.29).opacity(0.2)
-                                          : Color(white: 0.15)))
-                    ctx.stroke(Path(roundedRect: rect, cornerRadius: 3),
-                               with: .color(isSelected ? Color(red: 0.22, green: 0.96, blue: 0.29)
-                                            : Color(white: 0.30)),
-                               lineWidth: 1.2)
+                // Subtle building outline (only when no photo)
+                if mapImage == nil {
+                    let outlineRect = CGRect(
+                        x: 28 * 0.4, y: 28 * 0.4,
+                        width: size.width - 28 * 0.8,
+                        height: size.height - 28 * 0.8
+                    )
+                    ctx.fill(Path(outlineRect), with: .color(Color(white: 0.06)))
+                    ctx.stroke(Path(outlineRect),
+                               with: .color(Color(white: 0.15)),
+                               style: StrokeStyle(lineWidth: 1))
+                }
 
-                case .exit:
-                    let size: CGFloat = 10
-                    let diamond = Path { p in
-                        p.move(to:    CGPoint(x: center.x,        y: center.y - size))
-                        p.addLine(to: CGPoint(x: center.x + size, y: center.y))
-                        p.addLine(to: CGPoint(x: center.x,        y: center.y + size))
-                        p.addLine(to: CGPoint(x: center.x - size, y: center.y))
-                        p.closeSubpath()
+                // ── Edges ──
+                for edge in building.edges {
+                    guard let fromNode = nodeMap[edge.fromNodeID],
+                          let toNode   = nodeMap[edge.toNodeID] else { continue }
+
+                    let fromPt = pt(fromNode.coordinates)
+                    let toPt   = pt(toNode.coordinates)
+
+                    let isPath   = isOnPath(edge)
+                    let isHazard = hazardEdgeIDs.contains(edge.id)
+
+                    var edgePath = Path()
+                    edgePath.move(to: fromPt)
+                    edgePath.addLine(to: toPt)
+
+                    if isPath {
+                        ctx.stroke(edgePath,
+                                   with: .color(AppTheme.green),
+                                   style: StrokeStyle(lineWidth: 2.5, lineCap: .round, dash: [7, 5]))
+                    } else if isHazard {
+                        ctx.stroke(edgePath,
+                                   with: .color(AppTheme.red.opacity(0.45)),
+                                   style: StrokeStyle(lineWidth: 1.5))
+                    } else {
+                        ctx.stroke(edgePath,
+                                   with: .color(Color(white: 0.30).opacity(0.5)),
+                                   style: StrokeStyle(lineWidth: 0.8))
                     }
-                    let exitColor = isHazard
-                        ? Color(red: 0.90, green: 0.25, blue: 0.25)
-                        : Color(red: 0.22, green: 0.96, blue: 0.29)
-                    ctx.fill(diamond, with: .color(exitColor.opacity(0.25)))
-                    ctx.stroke(diamond, with: .color(exitColor), lineWidth: 1.5)
-
-                case .refugePoint:
-                    let r: CGFloat = 9
-                    let circle = Path(ellipseIn: CGRect(x: center.x - r, y: center.y - r,
-                                                         width: r * 2, height: r * 2))
-                    ctx.fill(circle, with: .color(Color(red: 0.96, green: 0.62, blue: 0.04).opacity(0.2)))
-                    ctx.stroke(circle, with: .color(Color(red: 0.96, green: 0.62, blue: 0.04)), lineWidth: 1.5)
-
-                case .stairwell:
-                    let r: CGFloat = 7
-                    let rect = CGRect(x: center.x - r, y: center.y - r, width: r * 2, height: r * 2)
-                    ctx.fill(Path(rect), with: .color(Color(white: 0.18)))
-                    ctx.stroke(Path(rect), with: .color(Color(white: 0.40)), lineWidth: 1)
-
-                case .intersection:
-                    let r: CGFloat = 3
-                    let dot = Path(ellipseIn: CGRect(x: center.x - r, y: center.y - r,
-                                                      width: r * 2, height: r * 2))
-                    ctx.fill(dot, with: .color(Color(white: 0.35)))
-
-                case .lift:
-                    let r: CGFloat = 6
-                    let rect = CGRect(x: center.x - r, y: center.y - r, width: r * 2, height: r * 2)
-                    ctx.stroke(Path(roundedRect: rect, cornerRadius: 2),
-                               with: .color(Color(white: 0.30)), lineWidth: 1)
                 }
 
-                // Hazard ring
-                if isHazard {
-                    let hr: CGFloat = 16
-                    let ring = Path(ellipseIn: CGRect(x: center.x - hr, y: center.y - hr,
-                                                      width: hr * 2, height: hr * 2))
-                    ctx.stroke(ring, with: .color(Color(red: 0.90, green: 0.25, blue: 0.25).opacity(0.6)),
-                               style: StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
-                }
-
-                // Selected pulse ring
-                if isSelected {
-                    let pr: CGFloat = 14
-                    let pulse = Path(ellipseIn: CGRect(x: center.x - pr, y: center.y - pr,
-                                                       width: pr * 2, height: pr * 2))
-                    ctx.fill(pulse, with: .color(Color(red: 0.22, green: 0.96, blue: 0.29).opacity(0.15)))
-                }
-
-                // Node labels for rooms and exits
-                if node.type == .room || node.type == .exit || node.type == .refugePoint {
-                    let label = Text(node.name)
-                        .font(.system(size: 8, weight: .medium))
-                        .foregroundStyle(Color(white: 0.55))
-                    ctx.draw(label, at: CGPoint(x: center.x, y: center.y + 16))
-                }
-            }
-
-            // --- Hazard labels ---
-            for hazard in activeHazards {
-                for nodeID in hazard.targetNodeIDs {
-                    guard let node = nodeMap[nodeID] else { continue }
+                // ── Nodes ──
+                for node in building.nodes {
                     let center = pt(node.coordinates)
-                    let label = Text(hazard.title.uppercased().prefix(6))
-                        .font(.system(size: 7, weight: .black, design: .monospaced))
-                        .foregroundStyle(Color(red: 0.90, green: 0.25, blue: 0.25))
-                    ctx.draw(label, at: CGPoint(x: center.x, y: center.y - 22))
+                    let isHazard   = hazardNodeIDs.contains(node.id)
+                    let isSelected = node.id == selectedNodeID
+
+                    // -- Base: dark filled circle for every node --
+                    let darkFill = Color(white: 0.18)
+                    let darkBorder = Color(white: 0.30)
+
+                    switch node.type {
+                    case .room:
+                        // Large dark circle + red ring outline
+                        let r: CGFloat = 12
+                        let circle = Path(ellipseIn: CGRect(x: center.x - r, y: center.y - r,
+                                                             width: r * 2, height: r * 2))
+                        ctx.fill(circle, with: .color(darkFill.opacity(0.85)))
+                        ctx.stroke(circle,
+                                   with: .color(isSelected ? AppTheme.green : AppTheme.red.opacity(0.8)),
+                                   style: StrokeStyle(lineWidth: isSelected ? 2.5 : 2))
+
+                    case .exit:
+                        // Amber/orange diamond
+                        let s: CGFloat = 12
+                        let diamond = Path { p in
+                            p.move(to:    CGPoint(x: center.x,     y: center.y - s))
+                            p.addLine(to: CGPoint(x: center.x + s, y: center.y))
+                            p.addLine(to: CGPoint(x: center.x,     y: center.y + s))
+                            p.addLine(to: CGPoint(x: center.x - s, y: center.y))
+                            p.closeSubpath()
+                        }
+                        let exitColor = isHazard ? AppTheme.red : AppTheme.amber
+                        ctx.fill(diamond, with: .color(exitColor.opacity(0.85)))
+                        ctx.stroke(diamond, with: .color(exitColor), lineWidth: 1.5)
+
+                    case .refugePoint:
+                        // Amber circle
+                        let r: CGFloat = 11
+                        let circle = Path(ellipseIn: CGRect(x: center.x - r, y: center.y - r,
+                                                             width: r * 2, height: r * 2))
+                        ctx.fill(circle, with: .color(AppTheme.amber.opacity(0.25)))
+                        ctx.stroke(circle, with: .color(AppTheme.amber), lineWidth: 2)
+
+                    case .stairwell:
+                        // Dark circle, slightly smaller
+                        let r: CGFloat = 9
+                        let circle = Path(ellipseIn: CGRect(x: center.x - r, y: center.y - r,
+                                                             width: r * 2, height: r * 2))
+                        ctx.fill(circle, with: .color(darkFill.opacity(0.8)))
+                        ctx.stroke(circle, with: .color(darkBorder), lineWidth: 1)
+
+                    case .intersection:
+                        // Smaller dark circle
+                        let r: CGFloat = 6
+                        let circle = Path(ellipseIn: CGRect(x: center.x - r, y: center.y - r,
+                                                             width: r * 2, height: r * 2))
+                        ctx.fill(circle, with: .color(darkFill.opacity(0.75)))
+                        ctx.stroke(circle, with: .color(darkBorder.opacity(0.5)), lineWidth: 0.8)
+
+                    case .lift:
+                        // Dark circle
+                        let r: CGFloat = 8
+                        let circle = Path(ellipseIn: CGRect(x: center.x - r, y: center.y - r,
+                                                             width: r * 2, height: r * 2))
+                        ctx.fill(circle, with: .color(darkFill.opacity(0.8)))
+                        ctx.stroke(circle, with: .color(darkBorder), lineWidth: 1)
+                    }
+
+                    // -- Hazard: warning triangle icon + red ring --
+                    if isHazard {
+                        let hr: CGFloat = 17
+                        let ring = Path(ellipseIn: CGRect(x: center.x - hr, y: center.y - hr,
+                                                          width: hr * 2, height: hr * 2))
+                        ctx.stroke(ring, with: .color(AppTheme.red.opacity(0.5)),
+                                   style: StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
+
+                        // Small warning triangle above the node
+                        let triSize: CGFloat = 7
+                        let triY = center.y - (node.type == .exit ? 18 : 16)
+                        let triangle = Path { p in
+                            p.move(to:    CGPoint(x: center.x,              y: triY - triSize))
+                            p.addLine(to: CGPoint(x: center.x + triSize,    y: triY + triSize * 0.6))
+                            p.addLine(to: CGPoint(x: center.x - triSize,    y: triY + triSize * 0.6))
+                            p.closeSubpath()
+                        }
+                        ctx.fill(triangle, with: .color(Color.white.opacity(0.9)))
+                        ctx.stroke(triangle, with: .color(AppTheme.red), lineWidth: 1)
+                    }
+
+                    // -- Selected: green pulse + dot + "YOU" label --
+                    if isSelected {
+                        let pr: CGFloat = 16
+                        let pulse = Path(ellipseIn: CGRect(x: center.x - pr, y: center.y - pr,
+                                                           width: pr * 2, height: pr * 2))
+                        ctx.fill(pulse, with: .color(AppTheme.green.opacity(0.20)))
+                        ctx.stroke(pulse, with: .color(AppTheme.green), lineWidth: 2.5)
+
+                        let dr: CGFloat = 5
+                        let dot = Path(ellipseIn: CGRect(x: center.x - dr, y: center.y - dr,
+                                                         width: dr * 2, height: dr * 2))
+                        ctx.fill(dot, with: .color(AppTheme.green))
+
+                        let youLabel = Text("YOU")
+                            .font(.system(size: 8, weight: .black, design: .monospaced))
+                            .foregroundStyle(AppTheme.green)
+                        ctx.draw(youLabel, at: CGPoint(x: center.x, y: center.y - 26))
+                    }
+
+                    // -- Node label (name / ID) --
+                    let label = Text(node.name)
+                        .font(.system(size: 8, weight: .semibold))
+                        .foregroundStyle(Color.white.opacity(0.85))
+                    let labelY: CGFloat
+                    switch node.type {
+                    case .exit:
+                        labelY = center.y + 18
+                    case .room, .refugePoint:
+                        labelY = center.y + 18
+                    default:
+                        labelY = center.y + 12
+                    }
+                    ctx.draw(label, at: CGPoint(x: center.x, y: labelY))
+
+                    // -- "EXIT" label under exit diamonds --
+                    if node.type == .exit {
+                        let exitLabel = Text("EXIT")
+                            .font(.system(size: 7, weight: .black, design: .monospaced))
+                            .foregroundStyle(AppTheme.red)
+                        ctx.draw(exitLabel, at: CGPoint(x: center.x, y: center.y + 26))
+                    }
+                }
+
+                // Hazard severity labels
+                for hazard in activeHazards {
+                    for nodeID in hazard.targetNodeIDs {
+                        guard let node = nodeMap[nodeID] else { continue }
+                        let center = pt(node.coordinates)
+                        let label = Text(hazard.title.uppercased().prefix(6))
+                            .font(.system(size: 7, weight: .black, design: .monospaced))
+                            .foregroundStyle(AppTheme.red)
+                        ctx.draw(label, at: CGPoint(x: center.x, y: center.y - 26))
+                    }
                 }
             }
+            .allowsHitTesting(false)
         }
     }
 }
 
-// MARK: - Location picker sheet
+// MARK: - Node hazard sheet (tap-to-place)
 
-private struct LocationPickerSheet: View {
+private struct NodeHazardSheet: View {
     @EnvironmentObject private var viewModel: AppViewModel
     @Environment(\.dismiss) private var dismiss
+    let node: Node
+
+    private var existingHazards: [HazardEvent] {
+        viewModel.activeHazards.filter { $0.targetNodeIDs.contains(node.id) }
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                Text("Select Your Location")
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundStyle(AppTheme.textPri)
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("SET HAZARD")
+                        .font(.system(size: 10, weight: .bold, design: .monospaced))
+                        .tracking(2)
+                        .foregroundStyle(AppTheme.textSec)
+                    Text(node.name)
+                        .font(.system(size: 20, weight: .black))
+                        .foregroundStyle(AppTheme.textPri)
+                    Text(node.type.rawValue.capitalized + " · Floor \(node.floor.capitalized)")
+                        .font(.system(size: 12))
+                        .foregroundStyle(AppTheme.textSec)
+                }
                 Spacer()
                 Button { dismiss() } label: {
                     Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 24))
                         .foregroundStyle(AppTheme.textDim)
-                        .font(.system(size: 22))
                 }
             }
             .padding(.horizontal, 20)
-            .padding(.top, 20)
+            .padding(.top, 24)
             .padding(.bottom, 16)
 
             Divider().background(AppTheme.divider)
 
-            ScrollView {
-                VStack(spacing: 0) {
-                    ForEach(viewModel.roomNodes) { node in
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 10) {
+                    if !existingHazards.isEmpty {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("ACTIVE HAZARDS HERE")
+                                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                                .tracking(2)
+                                .foregroundStyle(AppTheme.red)
+
+                            ForEach(existingHazards) { hazard in
+                                HStack(spacing: 12) {
+                                    Image(systemName: "exclamationmark.triangle.fill")
+                                        .foregroundStyle(AppTheme.red)
+                                    Text(hazard.title)
+                                        .font(.system(size: 14, weight: .semibold))
+                                        .foregroundStyle(AppTheme.textPri)
+                                        .lineLimit(1)
+                                    Spacer()
+                                    Button {
+                                        viewModel.clearAdHocHazards(nodeID: node.id)
+                                    } label: {
+                                        Image(systemName: "xmark.circle.fill")
+                                            .font(.system(size: 20))
+                                            .foregroundStyle(AppTheme.textDim)
+                                    }
+                                }
+                                .padding(12)
+                                .background(AppTheme.redDim)
+                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                                .overlay(RoundedRectangle(cornerRadius: 10)
+                                    .stroke(AppTheme.red.opacity(0.3), lineWidth: 1))
+                            }
+                        }
+                        .padding(.top, 16)
+                    }
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("MARK AS")
+                            .font(.system(size: 10, weight: .bold, design: .monospaced))
+                            .tracking(2)
+                            .foregroundStyle(AppTheme.textSec)
+                            .padding(.top, existingHazards.isEmpty ? 16 : 8)
+
+                        ForEach(HazardSeverity.allCases, id: \.self) { severity in
+                            Button {
+                                viewModel.placeAdHocHazard(nodeID: node.id, severity: severity)
+                                dismiss()
+                            } label: {
+                                HStack(spacing: 14) {
+                                    ZStack {
+                                        Circle()
+                                            .fill(severity.accentColor.opacity(0.15))
+                                            .frame(width: 42, height: 42)
+                                        Image(systemName: severity.icon)
+                                            .font(.system(size: 18, weight: .semibold))
+                                            .foregroundStyle(severity.accentColor)
+                                    }
+                                    VStack(alignment: .leading, spacing: 3) {
+                                        Text(severity.displayTitle.uppercased())
+                                            .font(.system(size: 14, weight: .black, design: .monospaced))
+                                            .tracking(1)
+                                            .foregroundStyle(AppTheme.textPri)
+                                        Text(severity.detailText)
+                                            .font(.system(size: 12))
+                                            .foregroundStyle(AppTheme.textSec)
+                                            .fixedSize(horizontal: false, vertical: true)
+                                    }
+                                    Spacer()
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 12, weight: .semibold))
+                                        .foregroundStyle(AppTheme.textDim)
+                                }
+                                .padding(14)
+                                .background(AppTheme.cardBg2)
+                                .clipShape(RoundedRectangle(cornerRadius: 14))
+                                .overlay(RoundedRectangle(cornerRadius: 14)
+                                    .stroke(AppTheme.border, lineWidth: 1))
+                            }
+                        }
+                    }
+
+                    if !existingHazards.isEmpty {
                         Button {
-                            viewModel.selectStartNode(node.id)
+                            viewModel.clearAdHocHazards(nodeID: node.id)
                             dismiss()
                         } label: {
-                            HStack(spacing: 14) {
-                                Image(systemName: "square.fill")
+                            HStack(spacing: 8) {
+                                Image(systemName: "trash")
                                     .font(.system(size: 14))
-                                    .foregroundStyle(
-                                        viewModel.selectedStartNodeID == node.id
-                                            ? AppTheme.green : AppTheme.textDim)
-
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(node.name)
-                                        .font(.system(size: 15, weight: .semibold))
-                                        .foregroundStyle(AppTheme.textPri)
-                                    Text("Floor: \(node.floor.capitalized)")
-                                        .font(.system(size: 12))
-                                        .foregroundStyle(AppTheme.textSec)
-                                }
-
-                                Spacer()
-
-                                if viewModel.selectedStartNodeID == node.id {
-                                    Image(systemName: "checkmark.circle.fill")
-                                        .foregroundStyle(AppTheme.green)
-                                }
+                                Text("Clear all hazards at this location")
+                                    .font(.system(size: 14, weight: .semibold))
                             }
-                            .padding(.horizontal, 20)
+                            .foregroundStyle(AppTheme.red)
+                            .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)
+                            .background(AppTheme.redDim)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .overlay(RoundedRectangle(cornerRadius: 12)
+                                .stroke(AppTheme.red.opacity(0.3), lineWidth: 1))
                         }
-                        Divider().background(AppTheme.divider).padding(.leading, 52)
+                        .padding(.top, 4)
                     }
                 }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 24)
             }
         }
     }
 }
 
-// MARK: - Map control button
+// MARK: - Mode toggle button
 
-private struct MapControlButton: View {
+private struct ModeButton: View {
     let icon: String
+    let label: String
+    let active: Bool
+    let color: Color
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            Image(systemName: icon)
-                .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(AppTheme.textSec)
-                .frame(width: 36, height: 36)
-                .background(AppTheme.cardBg2)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-                .overlay(RoundedRectangle(cornerRadius: 8).stroke(AppTheme.border, lineWidth: 1))
+            HStack(spacing: 6) {
+                Image(systemName: icon)
+                    .font(.system(size: 13, weight: .semibold))
+                Text(label)
+                    .font(.system(size: 12, weight: .bold))
+            }
+            .foregroundStyle(active ? color : AppTheme.textDim)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(active ? color.opacity(0.15) : Color.clear)
+            .clipShape(Capsule())
         }
     }
 }
@@ -435,4 +670,5 @@ private struct MapControlButton: View {
 #Preview {
     LiveMapView()
         .environmentObject(AppViewModel(container: AppContainer.makeDefault()))
+        .environmentObject(FloorPlanLibraryViewModel())
 }

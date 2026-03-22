@@ -7,6 +7,8 @@ struct ProfileView: View {
     @State private var liveLocation       = true
     @State private var biometricLock      = false
     @State private var showSignOutConfirm = false
+    @State private var showFirebaseTest   = false
+    @State private var showSendEmergency = false
 
     private let safetyContacts: [SafetyContact] = [
         SafetyContact(name: "Emergency Response", role: "Security",       icon: "shield.fill"),
@@ -74,7 +76,7 @@ struct ProfileView: View {
                             .font(.system(size: 20, weight: .black))
                             .foregroundStyle(AppTheme.textPri)
 
-                        Text(auth.userRole.uppercased())
+                        Text(auth.userRole.displayName.uppercased())
                             .font(.system(size: 11, weight: .bold, design: .monospaced))
                             .tracking(2)
                             .foregroundStyle(AppTheme.textSec)
@@ -94,18 +96,19 @@ struct ProfileView: View {
 
                     VStack(spacing: 16) {
 
-                        // Emergency protocols
-                        VStack(alignment: .leading, spacing: 12) {
-                            SectionHeader(icon: "exclamationmark.triangle.fill",
-                                          label: "EMERGENCY PROTOCOLS",
-                                          iconColor: AppTheme.red)
+                        // Emergency protocols (security only)
+                        if auth.userRole == .security {
+                            VStack(alignment: .leading, spacing: 12) {
+                                SectionHeader(icon: "exclamationmark.triangle.fill",
+                                              label: "EMERGENCY PROTOCOLS",
+                                              iconColor: AppTheme.red)
 
-                            Text("Instantly broadcast your SOS code to all safety contacts and building security.")
-                                .font(.system(size: 13))
-                                .foregroundStyle(AppTheme.textSec)
-                                .padding(.horizontal, 2)
+                                Text("Instantly broadcast your SOS code to all safety contacts and building security.")
+                                    .font(.system(size: 13))
+                                    .foregroundStyle(AppTheme.textSec)
+                                    .padding(.horizontal, 2)
 
-                            Button {} label: {
+                            Button { showSendEmergency = true } label: {
                                 HStack(spacing: 10) {
                                     Image(systemName: "shield.fill")
                                         .font(.system(size: 16))
@@ -120,6 +123,7 @@ struct ProfileView: View {
                             }
                         }
                         .darkCard()
+                        }
 
                         // Safety contacts
                         VStack(alignment: .leading, spacing: 12) {
@@ -233,12 +237,12 @@ struct ProfileView: View {
                             .darkCard()
                         }
 
-                        // Sign out
-                        Button { showSignOutConfirm = true } label: {
+                        // Database test
+                        Button { showFirebaseTest = true } label: {
                             HStack {
-                                Image(systemName: "rectangle.portrait.and.arrow.right")
+                                Image(systemName: "bolt.horizontal.circle")
                                     .font(.system(size: 16))
-                                Text("Sign Out of SafeExit")
+                                Text("Firebase DB Test")
                                     .font(.system(size: 15, weight: .semibold))
                                 Spacer()
                                 Image(systemName: "chevron.right")
@@ -252,7 +256,26 @@ struct ProfileView: View {
                             .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppTheme.border, lineWidth: 1))
                         }
 
-                        Text("SAFEEXIT · BUILD 2401")
+                        // Sign out
+                        Button { showSignOutConfirm = true } label: {
+                            HStack {
+                                Image(systemName: "rectangle.portrait.and.arrow.right")
+                                    .font(.system(size: 16))
+                                Text("Sign Out")
+                                    .font(.system(size: 15, weight: .semibold))
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(AppTheme.textDim)
+                            }
+                            .foregroundStyle(AppTheme.textPri)
+                            .padding(16)
+                            .background(AppTheme.cardBg)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppTheme.border, lineWidth: 1))
+                        }
+
+                        Text("SAFEROUTE · v\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")")
                             .font(.system(size: 10, weight: .medium, design: .monospaced))
                             .foregroundStyle(AppTheme.textDim)
                             .padding(.bottom, 8)
@@ -261,6 +284,13 @@ struct ProfileView: View {
                     .padding(.bottom, 20)
                 }
             }
+        }
+        .sheet(isPresented: $showFirebaseTest) { FirebaseTestView() }
+        .sheet(isPresented: $showSendEmergency) {
+            SendEmergencyView()
+                .environmentObject(viewModel)
+                .environmentObject(auth)
+                .presentationBackground(AppTheme.bg)
         }
         .confirmationDialog("Sign Out", isPresented: $showSignOutConfirm, titleVisibility: .visible) {
             Button("Sign Out", role: .destructive) { auth.signOut() }
