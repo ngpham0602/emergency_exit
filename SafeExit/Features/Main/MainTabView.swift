@@ -168,6 +168,13 @@ struct MainTabView: View {
         .fullScreenCover(isPresented: $showEmergency) {
             EmergencyActiveView().environmentObject(viewModel)
         }
+        .fullScreenCover(isPresented: $viewModel.showEmergencyAlert) {
+            if let alert = viewModel.activeEmergencyAlert {
+                UserEmergencyAlertView(alert: alert) {
+                    viewModel.navigateToMap()
+                }
+            }
+        }
         .onAppear { viewModel.recomputeRoute() }
         .onChange(of: authVM.userRole) { _ in selectedTab = 0 }
         .confirmationDialog("Stop Emergency Alert", isPresented: $confirmStopAlert, titleVisibility: .visible) {

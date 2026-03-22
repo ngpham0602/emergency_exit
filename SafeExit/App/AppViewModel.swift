@@ -25,6 +25,7 @@ final class AppViewModel: ObservableObject {
     private var alertListener: ListenerRegistration?
     private var hazardListener: ListenerRegistration?
     private var lastNotifiedAlertID: String?
+    private var knownHazardIDs: Set<String> = []
 
     init(container: AppContainer) {
         self.container = container
@@ -175,12 +176,23 @@ final class AppViewModel: ObservableObject {
                 for h in hazards {
                     if let id = h["id"] as? String {
                         self.container.hazardStateManager.setHazardState(hazardID: id, isActive: true)
+
+                        // Fire notification for newly detected hazards
+                        if !self.knownHazardIDs.contains(id) {
+                            self.knownHazardIDs.insert(id)
+                            let title = h["title"] as? String ?? "Unknown"
+                            let type = h["type"] as? String ?? "hazard"
+                            EmergencyNotificationManager.shared.fireHazardNotification(
+                                type: type, location: title
+                            )
+                        }
                     }
                 }
 
                 // If hazards were cleared (security stopped them), reset local state
                 if hadHazards && hazards.isEmpty {
                     self.container.hazardStateManager.reset()
+                    self.knownHazardIDs.removeAll()
                 }
 
                 self.objectWillChange.send()
@@ -198,6 +210,7 @@ final class AppViewModel: ObservableObject {
         // Clear local state
         container.hazardStateManager.reset()
         hasReportedHazards = false
+        knownHazardIDs.removeAll()
         objectWillChange.send()
         recomputeRoute()
 

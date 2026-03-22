@@ -20,12 +20,8 @@ struct FloorPlanRecord: Codable {
 class FirestoreService {
 
     static let shared = FirestoreService()
-<<<<<<< HEAD
-    private lazy var db = Firestore.firestore()
-=======
     private let db      = Firestore.firestore()
     private let storage = Storage.storage()
->>>>>>> Anotherone
     private init() {}
 
 

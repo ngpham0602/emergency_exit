@@ -9,11 +9,6 @@ struct SaferouteApp: App {
     @StateObject private var appViewModel  = AppViewModel(container: AppContainer.makeDefault())
     @StateObject private var authViewModel = AuthViewModel()
 
-<<<<<<< HEAD
-    var body: some Scene {
-        WindowGroup {
-            FirebaseTestView() 
-=======
     init() {
         FirebaseApp.configure()
 
@@ -27,12 +22,15 @@ struct SaferouteApp: App {
                 MainTabView()
                     .environmentObject(appViewModel)
                     .environmentObject(authViewModel)
-                    .onAppear { setupNotificationDeepLink() }
+                    .onAppear {
+                        setupNotificationDeepLink()
+                        appViewModel.startListeningForEmergencyAlerts()
+                        appViewModel.startListeningForReportedHazards()
+                    }
             } else {
                 LandingView()
                     .environmentObject(authViewModel)
             }
->>>>>>> Anotherone
         }
     }
 

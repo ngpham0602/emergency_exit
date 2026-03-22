@@ -54,7 +54,34 @@ final class EmergencyNotificationManager: NSObject, UNUserNotificationCenterDele
         center.setNotificationCategories([category])
     }
 
-    // MARK: - Fire notification
+    // MARK: - Hazard notification
+
+    func fireHazardNotification(type: String, location: String) {
+        let content = UNMutableNotificationContent()
+        content.title = "HAZARD REPORTED"
+        content.subtitle = "Saferoute Alert"
+        content.body = "\(type.uppercased()) hazard reported\(location.isEmpty ? "" : " at \(location)"). Routes are being recalculated."
+        content.categoryIdentifier = Self.emergencyCategoryID
+        content.sound = UNNotificationSound.default
+        content.interruptionLevel = .timeSensitive
+
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 0.1, repeats: false)
+        let request = UNNotificationRequest(
+            identifier: "hazard-\(UUID().uuidString)",
+            content: content,
+            trigger: trigger
+        )
+
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("[Notifications] Hazard notification failed: \(error.localizedDescription)")
+            } else {
+                print("[Notifications] Hazard notification sent: \(type)")
+            }
+        }
+    }
+
+    // MARK: - Fire emergency notification
 
     func fireEmergencyNotification(type: EmergencyType) {
         let content = UNMutableNotificationContent()

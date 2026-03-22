@@ -534,16 +534,31 @@ struct ReportHazardView: View {
 
             if let node = selectedCustomNode {
                 let name = node.label.isEmpty ? "Node \(node.id.prefix(6))" : node.label
-                Text("Hazard reported at **\(name)**.\nThe routing engine is recalculating safe paths.")
+                Text("Hazard reported at **\(name)**.\nAll users have been notified.\nRoutes are being recalculated.")
                     .font(.system(size: 14))
                     .foregroundStyle(AppTheme.textSec)
                     .multilineTextAlignment(.center)
             } else {
-                Text("Your hazard report has been logged.\nThe routing engine is recalculating safe paths.")
+                Text("Your hazard report has been logged.\nAll users have been notified.\nRoutes are being recalculated.")
                     .font(.system(size: 14))
                     .foregroundStyle(AppTheme.textSec)
                     .multilineTextAlignment(.center)
             }
+
+            // Notification sent badge
+            HStack(spacing: 8) {
+                Image(systemName: "bell.badge.fill")
+                    .font(.system(size: 14))
+                    .foregroundStyle(AppTheme.amber)
+                Text("NOTIFICATION SENT TO ALL USERS")
+                    .font(.system(size: 11, weight: .bold, design: .monospaced))
+                    .tracking(1)
+                    .foregroundStyle(AppTheme.amber)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(AppTheme.amber.opacity(0.12))
+            .clipShape(Capsule())
 
             Spacer()
             Button { dismiss() } label: {
@@ -565,28 +580,39 @@ struct ReportHazardView: View {
     private func submitReport(type: ReportHazardType) {
         guard let nodeID = selectedHazardNodeID else { return }
 
+        let locationName = selectedCustomNode.map { $0.label.isEmpty ? "Node \($0.id.prefix(6))" : $0.label } ?? nodeID
+
         // If the selected node maps to a BuildingPackage node, place ad-hoc hazard
         if let _ = viewModel.buildingPackage?.node(id: nodeID) {
             viewModel.placeAdHocHazard(nodeID: nodeID, severity: type.severity)
         }
 
-        // Also report to Firestore for persistence
-        if let node = selectedCustomNode {
-            let hazard = Hazard(
-                buildingId: "",
-                floorId: "",
-                type: type.rawValue.lowercased(),
-                xPercent: node.nx,
-                yPercent: node.ny,
-                confidence: 1.0,
-                confirmations: 1,
-                reportedBy: UIDevice.current.identifierForVendor?.uuidString ?? "unknown",
-                timestamp: Date(),
-                expiresAt: Date().addingTimeInterval(600)
-            )
-            Task {
+        // Report to Firestore for persistence + real-time sync to all devices
+        Task {
+            // Write to hazards collection
+            if let node = selectedCustomNode {
+                let hazard = Hazard(
+                    buildingId: "",
+                    floorId: "",
+                    type: type.rawValue.lowercased(),
+                    xPercent: node.nx,
+                    yPercent: node.ny,
+                    confidence: 1.0,
+                    confirmations: 1,
+                    reportedBy: UIDevice.current.identifierForVendor?.uuidString ?? "unknown",
+                    timestamp: Date(),
+                    expiresAt: Date().addingTimeInterval(600)
+                )
                 try? await FirestoreService.shared.reportHazard(hazard)
             }
+
+            // Write to activeHazards collection — this triggers the listener on ALL devices
+            // which fires the hazard notification to everyone
+            try? await FirestoreService.shared.reportActiveHazard(
+                hazardID: nodeID,
+                title: locationName,
+                type: type.rawValue.lowercased()
+            )
         }
 
         withAnimation { submitted = true }

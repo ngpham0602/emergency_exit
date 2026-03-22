@@ -91,11 +91,33 @@ struct SendEmergencyView: View {
                                 .font(.system(size: 16, weight: .black))
                                 .tracking(2)
                                 .foregroundStyle(AppTheme.green)
-                            Text("All users have been notified.")
+                            Text("All users have been notified immediately.\nCritical alert bypasses silent mode.")
                                 .font(.system(size: 13))
                                 .foregroundStyle(AppTheme.textSec)
+                                .multilineTextAlignment(.center)
+
+                            HStack(spacing: 8) {
+                                Image(systemName: "bell.badge.fill")
+                                    .font(.system(size: 14))
+                                    .foregroundStyle(AppTheme.red)
+                                Text("EMERGENCY NOTIFICATION ACTIVE")
+                                    .font(.system(size: 11, weight: .bold, design: .monospaced))
+                                    .tracking(1)
+                                    .foregroundStyle(AppTheme.red)
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10)
+                            .background(AppTheme.red.opacity(0.12))
+                            .clipShape(Capsule())
                         }
                         .padding(.bottom, 24)
+
+                        Text("Use the STOP ALERT button in the tab bar to end the emergency when it's over.")
+                            .font(.system(size: 12))
+                            .foregroundStyle(AppTheme.textDim)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 20)
+                            .padding(.bottom, 16)
 
                         Button { dismiss() } label: {
                             Text("Done")
@@ -219,6 +241,8 @@ struct SendEmergencyView: View {
             do {
                 try await FirestoreService.shared.sendEmergencyAlert(alert)
                 viewModel.onEmergencyAlertSent(alert)
+                // Fire notification immediately on this device too
+                EmergencyNotificationManager.shared.fireEmergencyNotification(type: type)
                 withAnimation { didSend = true }
             } catch {
                 print("[SendEmergencyView] Failed: \(error.localizedDescription)")
